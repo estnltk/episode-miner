@@ -1,0 +1,17 @@
+term,value,type
+Väga sage,sage,sagedus
+Sage,sage,sagedus
+Aeg-ajalt,aeg-ajalt,sagedus
+Harv,harv,sagedus
+Väga harv,harv,sagedus
+Teadmata,teadmata,sagedus
+Kõrvaltoimetest teavitamine,Kõrvaltoimetest teavitamine,standardtekst
+"Kui teil tekib ükskõik milline kõrvaltoime, pidage nõu oma arsti või apteekriga.","Kui teil tekib ükskõik milline kõrvaltoime, pidage nõu oma arsti või apteekriga.",standardtekst
+"Kõrvaltoime võib olla ka selline, mida selles infolehes ei ole nimetatud.","Kõrvaltoime võib olla ka selline, mida selles infolehes ei ole nimetatud.",standardtekst
+Kõrvaltoimetest võite ka ise teavitada www.ravimiamet.ee kaudu.,Kõrvaltoimetest võite ka ise teavitada www.ravimiamet.ee kaudu.,standardtekst
+Teavitades aitate saada rohkem infot ravimi ohutusest.,Teavitades aitate saada rohkem infot ravimi ohutusest.,standardtekst
+"Nagu kõik ravimid, võib ka see ravim põhjustada kõrvaltoimeid, kuigi kõigil neid ei teki.","Nagu kõik ravimid, võib ka see ravim põhjustada kõrvaltoimeid, kuigi kõigil neid ei teki.",standardtekst
+peavalu,peavalu,sümptom
+kõhukinnisus,kõhukinnisus,sümptom
+iiveldus,iiveldus,sümptom
+*gap*,*gap*,*gap*
