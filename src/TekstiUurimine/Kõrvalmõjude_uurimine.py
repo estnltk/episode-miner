@@ -6,7 +6,7 @@ Created on 05.04.2016
 import pandas
 
 from EventText.EventText import EventText, EventTagger
-from Winepi.Winepi import collection_of_frequent_episodes
+from Winepi.Winepi import collection_of_frequent_episodes_new
 import json
 
 with open('/home/paul/workspace/MyTestProject/data/korvalmojud_lyhendatud.html', 'r') as f:
@@ -16,20 +16,20 @@ dfs = pandas.read_html(html)
 
 event_vocabulary_file = '/home/paul/workspace/MyTestProject/data/event vocabulary.csv'
 
-event_tagger = EventTagger(event_vocabulary_file, consider_gaps=True)
+event_tagger = EventTagger(event_vocabulary_file)
 
-event_sequence_list = []
-for cell in dfs[0][5]:
-    event_text = EventText(cell, event_tagger = event_tagger)
+event_sequences = []
+for string in dfs[0][5]:
+    event_text = EventText(string, event_tagger = event_tagger)
     event_text.events()
     event_sequence = event_text.event_sequence(count_event_time_by='word', classificator='type')
-    event_sequence_list.append(event_sequence)
+    event_sequences.append(event_sequence)
 
 window_width = 900
 min_frequency = 0.3
 number_of_examples = 10
 
-frequent_episodes, examples = collection_of_frequent_episodes(event_sequence_list, 'default', window_width, min_frequency, number_of_examples)
+frequent_episodes, examples = collection_of_frequent_episodes_new(event_sequences, window_width, min_frequency, only_full_windows=False, gaps_skipping=True, number_of_examples = number_of_examples)
 
 frequent_episodes_to_file = []
 examples_to_file = []

@@ -4,6 +4,7 @@ Created on 03.2016
 @author: paul
 '''
 
+
 class Event():
     def __init__(self, event_type, event_time, text=None, start=None, end=None):
         self.event_type = event_type
@@ -15,7 +16,7 @@ class Event():
     
     def shift(self, shift):
         self.event_time += shift
-        return self # kas nii on Pythonis kombeks?
+        return self
 
 class Episode(tuple):
     def __init__(self, sequence_of_event_types):
@@ -24,6 +25,9 @@ class Episode(tuple):
         self.relative_frequency = 0
         self.inwindow = None
         self = sequence_of_event_types
+        
+    def reset_initialized(self):
+        self.initialized = [None] * len(self)
         
 class EventSequence(object):
     def __init__(self, sequence_of_events, start, end):
@@ -117,6 +121,71 @@ def frequent_serial_episodes(event_sequence, collection_of_serial_episodes, wind
         frequent_episode_examples[episode] = episode_examples[episode]
     return frequent_episodes, frequent_episode_examples
 
+def episode_frequences(event_sequence, collection_of_serial_episodes, window_width, only_full_windows, gaps_skipping, episode_examples, number_of_examples):
+    waits = {}
+    for episode in collection_of_serial_episodes:
+        episode.reset_initialized()
+        waits.setdefault(episode[0], []).append((episode, 0))
+    waits_copy = waits.copy() 
+    beginsat = {} 
+            
+    for start in range(-window_width + 1, event_sequence.end + 1):
+        beginsat[start + window_width - 1] = []
+        if start + window_width - 1 < event_sequence.end:
+            removes = []
+            appends = []
+            for event in event_sequence.sequence_of_events:
+                if event.event_time != start + window_width - 1: continue #seda saab optimiseerida 
+                waits.setdefault(event.event_type, []).sort(key = lambda pair: pair[1], reverse = True)
+                for episode, j in waits[event.event_type]: 
+                    if j == 0:
+                        episode.initialized[0] = event
+                        if len(episode) == 1:
+                            beginsat[episode.initialized[0].event_time].append(episode)
+                            if episode.inwindow == None:
+                                episode.inwindow = start
+                                if only_full_windows and start < 0:
+                                    episode.inwindow = 0
+                        else:
+                            appends.append((episode, 1))                    
+                    elif j < len(episode) - 1: 
+                        episode.initialized[j] = None
+                        if episode.initialized[j-1] != None and episode.initialized[j-1].event_time > start: # seda saab täpsustada
+                            episode.initialized[j] = episode.initialized[j-1]
+                            appends.append((episode, j+1))
+                        removes.append((episode, j))
+                    elif j == len(episode) - 1:
+                        if episode.initialized[j] == None and episode.initialized[j-1] != None and episode.initialized[j-1].event_time >= start:
+                            episode.inwindow = start
+                            if only_full_windows and start < 0:
+                                episode.inwindow = 0
+                        if episode.initialized[j-1] != None and episode.initialized[j-1].event_time >= start:
+                            episode.initialized[j] = episode.initialized[j-1]
+                            beginsat[episode.initialized[j].event_time].append(episode)
+                        removes.append((episode, j))
+                if gaps_skipping:
+                    for episode, j in removes:
+                        waits[episode[j]].remove((episode, j))            
+                else:
+                    waits = waits_copy.copy()
+                for episode, j in appends:
+                    waits.setdefault(episode[j], []).append((episode, j))
+        
+        if start >= 0:
+            for episode in beginsat[start]:
+                if episode.initialized[-1] != None and episode.initialized[-1].event_time == start:
+                    episode.freq_count += episode.initialized[-1].event_time - episode.inwindow + 1
+                    if only_full_windows and start + window_width > event_sequence.end:
+                        episode.freq_count -= start + window_width - event_sequence.end
+                    if len(episode_examples[episode]) < number_of_examples:
+                        episode_examples[episode].append(find_episode(episode, episode.initialized[-1], event_sequence))
+                    episode.inwindow = None
+                    episode.initialized[-1] = None
+        if start in beginsat:
+            del beginsat[start]
+
+    return collection_of_serial_episodes, episode_examples
+
 '''Algoritm 3
 '''
 def candidate_serial_episodes(F):
@@ -135,7 +204,7 @@ def candidate_serial_episodes(F):
         current_block_start = k + 1
         j = F_block_start[i]
         while j < len(F) and F_block_start[j] == F_block_start[i]:
-            episode  = F[i][:l] + F[j][l - 1:]
+            episode = F[i][:l] + F[j][l - 1:]
             
             next_event = True
             for y in range(l - 1):
@@ -145,10 +214,52 @@ def candidate_serial_episodes(F):
                     continue
             if next_event:
                 k += 1
-                C += [episode]
+                C.append(Episode(episode))
                 C_block_start += [current_block_start]
             j += 1
     return C
+
+
+def collection_of_frequent_episodes_new(event_sequences, window_width, min_frequency, only_full_windows=False, gaps_skipping=True, number_of_examples=0, **kwargs):
+    if not isinstance(event_sequences, list):
+        event_sequences = [event_sequences]
+    
+    if 'event_types' in kwargs:
+        event_types = kwargs['event_types']
+    else:
+        event_types = set([event.event_type 
+                           for event_sequence in event_sequences 
+                           for event in event_sequence.sequence_of_events])
+        event_types.discard('*gap*')
+    collection_of_episodes = [Episode([event_type]) for event_type in event_types]
+
+    number_of_windows = (window_width - 1) * len(event_sequences)
+    if only_full_windows:
+        number_of_windows = -number_of_windows
+    for event_sequence in event_sequences:
+        number_of_windows += event_sequence.end - event_sequence.start
+        if only_full_windows and event_sequence.end - event_sequence.start < window_width:
+            print('Winepi: Event sequence shorter than window width.')
+
+    frequent_episodes = []
+    frequent_episode_examples = {}
+    while len(collection_of_episodes) > 0:
+        episode_examples = {}
+        for episode in collection_of_episodes:
+            episode_examples[episode] = []
+        for event_sequence in event_sequences:
+            episode_frequences(event_sequence, collection_of_episodes, window_width, only_full_windows, gaps_skipping, episode_examples, number_of_examples)
+
+        new_frequent_episodes = []
+        for episode in collection_of_episodes:
+            episode.relative_frequency = episode.freq_count / number_of_windows
+            if episode.relative_frequency >= min_frequency:
+                new_frequent_episodes.append(episode)
+                frequent_episode_examples[episode] = episode_examples[episode]
+        collection_of_episodes = candidate_serial_episodes(new_frequent_episodes)
+        frequent_episodes += new_frequent_episodes
+    return frequent_episodes, frequent_episode_examples
+
 
 '''Algorithm 2
 '''
