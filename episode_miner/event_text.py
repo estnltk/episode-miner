@@ -15,11 +15,11 @@ class EventText(Text):
             pass
                 
     def events(self):
-        if not self.is_tagged('events'): #kas nii on hästi?
+        if not self.is_tagged('events'):
             self['events'] = self.event_tagger.events(self)
         return self['events']
         
-    def event_sequence(self, count_event_time_by, classificator): #kus on selle funktsiooni õige koht?
+    def event_sequence(self, count_event_time_by, classificator):
         if count_event_time_by == 'char':
             sequence_of_events = [Event(event[classificator], event['cstart'], self, event['start'], event['end']) for event in self['events']]
             start = self['events'][0]['cstart'] 
@@ -32,6 +32,4 @@ class EventText(Text):
             sequence_of_events = []
             start = 0
             end = 1
-#        if 'words' in self.keys(): #ümber teha, nii et chariga ka töötab
-#            end = len(self['words'])
         return EventSequence(sequence_of_events, start, end)

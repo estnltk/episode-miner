@@ -37,7 +37,6 @@ class EventTagger():
                 events.append(entry.copy())
                 events[-1].update({START: start, END: start+len(entry[TERM])})
                 start = text.find(entry[TERM], start+1)
-        events.sort(key=lambda event: event[START]) # mis teha kui mitu 'event'i kattuvad?
         return events
 
     def find_events_ahocorasick(self, text):
@@ -50,10 +49,21 @@ class EventTagger():
         for item in self.ahocorasick_automaton.iter(text):
             events.append(item[1].copy())
             events[-1].update({START: item[0]+1-len(item[1][TERM]), END: item[0]+1})
-        events.sort(key=lambda event: event[START]) # mis teha kui mitu 'event'i kattuvad?
         return events
     
     def event_intervals(self, events, text):
+        events.sort(key=lambda event: event[START])
+        events.sort(key=lambda event: event[END])
+        for i in range(len(events)-1, -1, -1):
+            if events[i][END] == events[i-1][END] and events[i][START] >= events[i-1][START]:
+                del events[i]
+        events.sort(key=lambda event: event[START])
+        no_super_events = []
+        for i in range(len(events)-1):
+            if events[i][START] != events[i+1][START] or events[i][END] > events[i+1][END]:
+                no_super_events.append(events[i])        
+        events = no_super_events
+                
         bookmark = 0
         for event in events:
             event[WSTART] = len(text.word_spans)
