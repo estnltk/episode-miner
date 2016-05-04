@@ -18,7 +18,7 @@ class EventTagger():
     
     def read_event_vocabulary(self, event_vocabulary_file):
         event_vocabulary = []
-        with open(event_vocabulary_file) as file:
+        with open(event_vocabulary_file, 'rb') as file:
             reader = csv.DictReader(file)
             if (START in reader.fieldnames or 
                 END in reader.fieldnames or
