@@ -1,4 +1,6 @@
-import csv
+from __future__ import unicode_literals
+
+import unicodecsv as csv
 import ahocorasick
 from estnltk.names import START, END, TEXT
 
