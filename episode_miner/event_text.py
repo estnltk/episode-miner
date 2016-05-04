@@ -1,33 +1,30 @@
-from estnltk.text import Text
-from winepi import Event, EventSequence
+from estnltk import Text
+from episode_miner.winepi import Event, EventSequence
+from episode_miner.event_tagger import START, END, WSTART, CSTART
 
 class EventText(Text):
         
     def __init__(self, *args, **kwargs):
         super(EventText, self).__init__(*args, **kwargs)
-        if 'event_vocabulary' in kwargs:
-            pass
-        else:
-            pass
         if 'event_tagger' in kwargs:
             self.event_tagger = kwargs['event_tagger']
         else:
-            pass
-                
+            raise Exception('No event_tagger given.')
+
     def events(self):
         if not self.is_tagged('events'):
-            self['events'] = self.event_tagger.events(self)
+            self['events'] = self.event_tagger.tag_events(self)
         return self['events']
         
-    def event_sequence(self, count_event_time_by, classificator):
+    def get_event_sequence(self, count_event_time_by, classificator):
         if count_event_time_by == 'char':
-            sequence_of_events = [Event(event[classificator], event['cstart'], self, event['start'], event['end']) for event in self['events']]
-            start = self['events'][0]['cstart'] 
-            end = self['events'][-1]['cend']
+            sequence_of_events = [Event(event[classificator], event[CSTART], self, event[START], event[END]) for event in self['events']]
+            start = self['events'][0][CSTART] 
+            end = self['events'][-1][CSTART] + 1 # kas arvutada nii või keerulisemalt? 
         elif count_event_time_by == 'word':
-            sequence_of_events = [Event(event[classificator], event['wstart'], self, event['start'], event['end']) for event in self['events']]
-            start = self['events'][0]['wstart'] 
-            end = self['events'][-1]['wend']
+            sequence_of_events = [Event(event[classificator], event[WSTART], self, event[START], event[END]) for event in self['events']]
+            start = self['events'][0][WSTART] 
+            end = self['events'][-1][WSTART] + 1 # kas arvutada nii või keerulisemalt? 
         else: 
             sequence_of_events = []
             start = 0

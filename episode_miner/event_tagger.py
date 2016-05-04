@@ -9,8 +9,9 @@ CSTART = 'cstart'
 
 class EventTagger():
     
-    def __init__(self, event_vocabulary_file):
+    def __init__(self, event_vocabulary_file, method):
         self.event_vocabulary = self.read_event_vocabulary(event_vocabulary_file)
+        self.method = method
         self.ahocorasick_automaton = None
     
     def read_event_vocabulary(self, event_vocabulary_file):
@@ -52,17 +53,17 @@ class EventTagger():
         return events
     
     def event_intervals(self, events, text):
-        events.sort(key=lambda event: event[START])
+#         events.sort(key=lambda event: event[START])
         events.sort(key=lambda event: event[END])
-        for i in range(len(events)-1, -1, -1):
-            if events[i][END] == events[i-1][END] and events[i][START] >= events[i-1][START]:
-                del events[i]
+#         for i in range(len(events)-1, -1, -1):
+#             if events[i][END] == events[i-1][END] and events[i][START] >= events[i-1][START]:
+#                 del events[i]
         events.sort(key=lambda event: event[START])
-        no_super_events = []
-        for i in range(len(events)-1):
-            if events[i][START] != events[i+1][START] or events[i][END] > events[i+1][END]:
-                no_super_events.append(events[i])        
-        events = no_super_events
+#         no_super_events = []
+#         for i in range(len(events)-1):
+#             if events[i][START] != events[i+1][START] or events[i][END] > events[i+1][END]:
+#                 no_super_events.append(events[i])        
+#         events = no_super_events
                 
         bookmark = 0
         for event in events:
@@ -88,10 +89,10 @@ class EventTagger():
             c_shift += event[END] - event[START] - 1
         return events
 
-    def tag_events(self, text, method):
-        if method == 'ahocorasick':
+    def tag_events(self, text):
+        if self.method == 'ahocorasick':
             events = self.find_events_ahocorasick(text[TEXT])
-        elif method == 'naive':
+        elif self.method == 'naive':
             events = self.find_events_naive(text[TEXT])
         else:
             raise Exception('Invalid method.')
