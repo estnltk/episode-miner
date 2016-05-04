@@ -1,0 +1,3 @@
+unicodecsv==0.14.1
+pyahocorasick==1.1.0
+estnltk==1.4
