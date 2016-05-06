@@ -11,9 +11,9 @@ class EventText(Text):
         else:
             raise Exception('No event_tagger given.')
 
-    def events(self):
+    def events(self):# parem tag_events ?
         if not self.is_tagged('events'):
-            self['events'] = self.event_tagger.tag_events(self)
+            self['events'] = self.event_tagger.tag_events(self) # parem get_events?
         return self['events']
         
     def get_event_sequence(self, count_event_time_by, classificator):
