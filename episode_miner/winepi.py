@@ -1,3 +1,9 @@
+from estnltk.names import START, END
+TERM = 'term'
+WSTART = 'wstart'
+WEND = 'wend'
+CSTART = 'cstart'
+
 class Event(object):
     def __init__(self, event_type, event_time, text=None, start=None, end=None):
         self.event_type = event_type
@@ -27,6 +33,22 @@ class EventSequence(object):
         self.sequence_of_events = sequence_of_events
         self.start = start
         self.end = end
+
+    def get_event_sequence(self, count_event_time_by, classificator):
+        if count_event_time_by == 'char':
+            sequence_of_events = [Event(event[classificator], event[CSTART], self, event[START], event[END]) for event in self['events']]
+            start = self['events'][0][CSTART] 
+            end = self['events'][-1][CSTART] + 1 # kas arvutada nii või keerulisemalt? 
+        elif count_event_time_by == 'word':
+            sequence_of_events = [Event(event[classificator], event[WSTART], self, event[START], event[END]) for event in self['events']]
+            start = self['events'][0][WSTART] 
+            end = self['events'][-1][WSTART] + 1 # kas arvutada nii või keerulisemalt? 
+        else: 
+            sequence_of_events = []
+            start = 0
+            end = 1
+        return EventSequence(sequence_of_events, start, end)
+
 
 
 def find_episode(episode, first_event, event_sequence):

@@ -1,5 +1,3 @@
-term,value,type
-Väga sage,sage,sagedus
-Sage,sage,sagedus
-peavalu,peavalu,sümptom
-kõhukinnisus,kõhukinnisus,sümptom
+term,type
+Harv,sagedus
+peavalu,sümptom

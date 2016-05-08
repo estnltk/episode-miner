@@ -1,32 +1,28 @@
 from estnltk import Text
-from episode_miner.winepi import Event, EventSequence
-from episode_miner.event_tagger import START, END, WSTART, CSTART
+from cached_property import cached_property
+
+EVENTS = 'events'
+
+event_tagger = None
 
 class EventText(Text):
-        
+    """Subclass of Estnltk's Text. Introduces ``events`` layer.
+    """
+
     def __init__(self, *args, **kwargs):
         super(EventText, self).__init__(*args, **kwargs)
-        if 'event_tagger' in kwargs:
-            self.event_tagger = kwargs['event_tagger']
-        else:
-            raise Exception('No event_tagger given.')
+        self.__event_tagger = kwargs.get('event_tagger', event_tagger)
+        if self.__event_tagger == None:
+            raise Exception('No event tagger given.') # default_event_tagger peaks hoopis olema
 
-    def events(self):# parem tag_events ?
-        if not self.is_tagged('events'):
-            self['events'] = self.event_tagger.tag_events(self) # parem get_events?
-        return self['events']
-        
-    def get_event_sequence(self, count_event_time_by, classificator):
-        if count_event_time_by == 'char':
-            sequence_of_events = [Event(event[classificator], event[CSTART], self, event[START], event[END]) for event in self['events']]
-            start = self['events'][0][CSTART] 
-            end = self['events'][-1][CSTART] + 1 # kas arvutada nii või keerulisemalt? 
-        elif count_event_time_by == 'word':
-            sequence_of_events = [Event(event[classificator], event[WSTART], self, event[START], event[END]) for event in self['events']]
-            start = self['events'][0][WSTART] 
-            end = self['events'][-1][WSTART] + 1 # kas arvutada nii või keerulisemalt? 
-        else: 
-            sequence_of_events = []
-            start = 0
-            end = 1
-        return EventSequence(sequence_of_events, start, end)
+    @cached_property
+    def events(self):    
+        """The list of events representing ``events`` layer elements."""
+        if not self.is_tagged(EVENTS):
+            self.tag_events()
+        return self[EVENTS]
+
+    def tag_events(self):
+        """Tags events in this Text instance. Creates ``events`` layer."""
+        self[EVENTS] = self.__event_tagger.tag_events(self)
+        return self 
