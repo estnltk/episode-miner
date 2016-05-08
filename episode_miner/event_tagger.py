@@ -79,6 +79,8 @@ class EventTagger(object):
         return events
 
     def resolve_conflicts(self, events):
+        events.sort(key=lambda event: event[END])
+        events.sort(key=lambda event: event[START])
         if self.conflict_resolving_strategy == 'ALL':
             return events
         elif self.conflict_resolving_strategy == 'MAX':
@@ -152,9 +154,6 @@ class EventTagger(object):
             events = self.find_events_naive(text.text)
         else:
             raise Exception('Invalid method.')
-
-        events.sort(key=lambda event: event[END])
-        events.sort(key=lambda event: event[START])
 
         events = self.resolve_conflicts(events)
 
