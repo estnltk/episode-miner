@@ -10,14 +10,27 @@ WSTART = 'wstart'
 WEND = 'wend'
 CSTART = 'cstart'
 
-class EventTagger():
-    
+class EventTagger(object):
+    """A class that finds a list of events from Text object based on user-provided vocabulary. 
+    The events are tagged by several metrics (start, end, cstart, wstart) 
+    and user-provided classificators.
+    """
     def __init__(self, event_vocabulary, search_method, conflict_resolving_strategy):
         self.event_vocabulary = self.read_event_vocabulary(event_vocabulary)
         self.search_method = search_method
         self.ahocorasick_automaton = None
         self.conflict_resolving_strategy = conflict_resolving_strategy
-    
+        """Initialize a new EventTagger instance.
+        Parameters
+        ----------
+        event_vocabulary: str, pandas.DataFrame, list
+            Vocabulary for events.
+        search_method: 'naive', 'ahocorasic'
+            Method to find events in text.
+        conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
+            Strategy to choose between overlaping events.
+        """
+        
     def read_event_vocabulary(self, event_vocabulary):
         if isinstance(event_vocabulary, list):
             event_vocabulary = event_vocabulary
@@ -122,6 +135,17 @@ class EventTagger():
         return events
 
     def tag_events(self, text):
+        """Retrieves list of events in text.
+        
+        Parameters
+        ----------
+        text: Text
+            The text to search for eventst.
+            
+        Returns
+        -------
+        list of events sorted by start, end
+        """
         if self.search_method == 'ahocorasick':
             events = self.find_events_ahocorasick(text.text)
         elif self.search_method == 'naive':

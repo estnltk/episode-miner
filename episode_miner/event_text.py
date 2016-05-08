@@ -10,10 +10,18 @@ class EventText(Text):
     """
 
     def __init__(self, *args, **kwargs):
+        """Initialize new EventText instance.
+
+        Parameters
+        ----------
+        event_tagger: episode-miner.EventTagger
+            Tagger for annotaitng events.
+        """
         super(EventText, self).__init__(*args, **kwargs)
         self.__event_tagger = kwargs.get('event_tagger', event_tagger)
         if self.__event_tagger == None:
             raise Exception('No event tagger given.') # default_event_tagger peaks hoopis olema
+        
 
     @cached_property
     def events(self):    
