@@ -5,7 +5,17 @@ WEND = 'wend'
 CSTART = 'cstart'
 
 class Event(object):
+    
     def __init__(self, event_type, event_time, text=None, start=None, end=None):
+        """Initialize a new Event
+        
+        Parameters
+        ----------
+        event_type: object of hashable type
+            Type of event
+        event_time: int
+            Time of event
+        """
         self.event_type = event_type
         self.event_time = event_time
         self.text = text
