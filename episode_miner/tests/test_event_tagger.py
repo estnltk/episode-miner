@@ -114,3 +114,19 @@ class EventTaggerTest(unittest.TestCase):
         expected = [{'cstart': 0, 'start': 0, 'end': 4, 'type': 'sagedus', 'wstart': 0, 'term': 'Harv'}, 
                     {'cstart': 10, 'start': 13, 'end': 20, 'type': 'sümptom', 'wstart': 2, 'term': 'peavalu'}]
         self.assertListEqual(expected, result)
+
+
+    def test_event_tagger_sort_events(self): # TODO: kattuvate sündmuste cstart, wstart vajab lahendust
+        event_vocabulary = [{'term': 'neli'}, 
+                            {'term': 'kolm neli'},
+                            {'term': 'kaks kolm'},
+                            {'term': 'kaks kolm neli'}]
+        text = Text('Üks kaks kolm neli.')
+        event_tagger = EventTagger(event_vocabulary, 'naive', 'ALL')
+        result = event_tagger.tag_events(text)
+        expected = [{'cstart': 4, 'end': 13, 'start': 4, 'term': 'kaks kolm', 'wstart': 1},
+                    {'cstart': -4, 'end': 18, 'start': 4, 'term': 'kaks kolm neli', 'wstart': 0},
+                    {'cstart': -12, 'end': 18, 'start': 9, 'term': 'kolm neli', 'wstart': -1},
+                    {'cstart': -15, 'end': 18, 'start': 14, 'term': 'neli', 'wstart': -1}]
+
+        self.assertListEqual(expected, result)
