@@ -20,7 +20,7 @@ class EventText(Text):
         super(EventText, self).__init__(*args, **kwargs)
         self.__event_tagger = kwargs.get('event_tagger', event_tagger)
         if self.__event_tagger == None:
-            raise Exception('No event tagger given.') # default_event_tagger peaks hoopis olema
+            raise Exception('No event tagger given.') # kas default_event_tagger peaks hoopis olema?
         
 
     @cached_property
