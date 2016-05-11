@@ -25,6 +25,9 @@ class Event(object):
     def __repr__(self, *args, **kwargs):
         return self.__str__()
     
+    def __eq__(self, *args, **kwargs):
+        return object.__eq__(self, *args, **kwargs)
+    
     def shift(self, shift):
         self.event_time += shift
         return self
@@ -87,7 +90,10 @@ class EventSequence(object):
             if self.start == None:
                 self.start = 0
             if self.end == None: 
-                self.end = event_text.events[-1][CSTART] + len(event_text.text) - event_text.events[-1][END]
+                if len(event_text.events) > 0:
+                    self.end = event_text.events[-1][CSTART] + len(event_text.text) - event_text.events[-1][END] + 1
+                else:
+                    self.end = len(event_text.text)
             else:
                 pass # TODO: Kas peaks errorit viskama?  
         elif determine_event_time_by == 'word':
@@ -100,11 +106,14 @@ class EventSequence(object):
             if self.start == None:
                 self.start = 0
             if self.end == None: 
-                end_of_last_event = event_text.events[-1][END]
-                for i in range(len(event_text.words)-1, -1, -1):
-                    if end_of_last_event >= event_text.words[i][END]:
-                        break
-                self.end = len(event_text.words) - i + event_text.events[-1][WSTART] 
+                if len(event_text.events) > 0:
+                    end_of_last_event = event_text.events[-1][END]
+                    for i in range(len(event_text.words)-1, -1, -1):
+                        if end_of_last_event >= event_text.words[i][END]:
+                            break
+                    self.end = len(event_text.words) - i + event_text.events[-1][WSTART]
+                else:
+                    self.end = len(event_text.words)
             else:
                 pass # TODO: Kas peaks errorit viskama?  
         else: 
