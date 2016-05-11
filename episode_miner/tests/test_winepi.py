@@ -1,0 +1,81 @@
+import unittest
+from episode_miner import Event, Episode, EventSequence, EventText, EventTagger
+
+class EventTest(unittest.TestCase):
+    def test_initialization(self):
+        event = Event('something', 23)
+        self.assertEqual(event.event_type, 'something')
+        self.assertEqual(event.event_time, 23)
+
+    def test_shift(self):
+        event = Event('something', 23)
+        event.shift(7)
+        self.assertEqual(event.event_time, 30)
+
+
+class EpisodeTest(unittest.TestCase):
+        
+    episode = Episode(['one', 'two', 'three'])
+
+    def test_initialization(self):
+        episode = Episode(['one', 'two', 'three'])
+        self.assertListEqual(episode.initialized, [None, None, None])
+        self.assertEqual(episode.freq_count, 0)
+        self.assertEqual(episode.relative_frequency, 0)
+        self.assertTupleEqual(episode, ('one', 'two', 'three'))
+
+    def test_reset_initialized(self):
+        episode = Episode(['one', 'two', 'three'])
+        episode.initialized = [4, 6, 8]
+        self.assertListEqual(episode.initialized, [4, 6, 8])
+        episode.reset_initialized()
+        self.assertListEqual(episode.initialized, [None, None, None])
+
+
+class EventSequenceTest(unittest.TestCase):
+    
+    def test_simple_initialization(self):
+        sequence_of_events = [Event('one', 5), Event('two', 9), Event('three', 13)]
+        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=1, end=16)
+        
+        self.assertListEqual(event_sequence.sequence_of_events, sequence_of_events)
+        self.assertEqual(event_sequence.start, 1)
+        self.assertEqual(event_sequence.end, 16)
+    
+    def test_initialization_by_EventText(self):
+        event_vocabulary = [{'term': 'kakskümmend viis'}, 
+                            {'term': 'seitse'}]    
+        event_tagger = EventTagger(event_vocabulary, search_method='naive', conflict_resolving_strategy='ALL')
+        event_text = EventText('Arv kakskümmend viis on suurem kui seitse.', event_tagger=event_tagger)
+        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='char')
+        self.assertEqual(event_sequence.end, 22)
+        self.assertEqual(event_sequence.start, 0)
+        self.assertEqual(event_sequence.sequence_of_events[0].event_type, 'kakskümmend viis')
+        self.assertEqual(event_sequence.sequence_of_events[0].event_time, 4)
+        self.assertEqual(event_sequence.sequence_of_events[1].event_type, 'seitse')
+        self.assertEqual(event_sequence.sequence_of_events[1].event_time, 20)
+
+        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='word')
+        self.assertEqual(event_sequence.end, 7)
+        self.assertEqual(event_sequence.start, 0)
+        self.assertEqual(event_sequence.sequence_of_events[0].event_type, 'kakskümmend viis')
+        self.assertEqual(event_sequence.sequence_of_events[0].event_time, 1)
+        self.assertEqual(event_sequence.sequence_of_events[1].event_type, 'seitse')
+        self.assertEqual(event_sequence.sequence_of_events[1].event_time, 5)
+
+
+        event_text = EventText('Sündmusteta tekst.', event_tagger=event_tagger)
+        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='char')
+        self.assertEqual(event_sequence.start, 0)
+        self.assertEqual(event_sequence.end, 18)
+        self.assertEqual(len(event_sequence.sequence_of_events), 0)
+
+        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='word')
+        self.assertEqual(event_sequence.start, 0)
+        self.assertEqual(event_sequence.end, 3)
+        self.assertEqual(len(event_sequence.sequence_of_events), 0)
+
+
+class WinepiTest(unittest.TestCase):
+    pass
+#Arv k on suurem kui s.
