@@ -3,29 +3,29 @@ from episode_miner import Event, Episode, EventSequence, EventText, EventTagger
 
 class EventTest(unittest.TestCase):
     def test_initialization(self):
-        event = Event('something', 23)
-        self.assertEqual(event.event_type, 'something')
+        event = Event('midagi', 23)
+        self.assertEqual(event.event_type, 'midagi')
         self.assertEqual(event.event_time, 23)
 
     def test_shift(self):
-        event = Event('something', 23)
+        event = Event('midagi', 23)
         event.shift(7)
         self.assertEqual(event.event_time, 30)
 
 
 class EpisodeTest(unittest.TestCase):
         
-    episode = Episode(['one', 'two', 'three'])
+    episode = Episode(['üks', 'kaks', 'kolm'])
 
     def test_initialization(self):
-        episode = Episode(['one', 'two', 'three'])
+        episode = Episode(['üks', 'kaks', 'kolm'])
         self.assertListEqual(episode.initialized, [None, None, None])
         self.assertEqual(episode.freq_count, 0)
         self.assertEqual(episode.relative_frequency, 0)
-        self.assertTupleEqual(episode, ('one', 'two', 'three'))
+        self.assertTupleEqual(episode, ('üks', 'kaks', 'kolm'))
 
     def test_reset_initialized(self):
-        episode = Episode(['one', 'two', 'three'])
+        episode = Episode(['üks', 'kaks', 'kolm'])
         episode.initialized = [4, 6, 8]
         self.assertListEqual(episode.initialized, [4, 6, 8])
         episode.reset_initialized()
@@ -35,7 +35,7 @@ class EpisodeTest(unittest.TestCase):
 class EventSequenceTest(unittest.TestCase):
     
     def test_simple_initialization(self):
-        sequence_of_events = [Event('one', 5), Event('two', 9), Event('three', 13)]
+        sequence_of_events = [Event('üks', 5), Event('kaks', 9), Event('kolm', 13)]
         event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=1, end=16)
         
         self.assertListEqual(event_sequence.sequence_of_events, sequence_of_events)
@@ -77,5 +77,4 @@ class EventSequenceTest(unittest.TestCase):
 
 
 class WinepiTest(unittest.TestCase):
-    pass
-#Arv k on suurem kui s.
+    pass #TODO: 
