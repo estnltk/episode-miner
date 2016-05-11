@@ -6,28 +6,31 @@ CSTART = 'cstart'
 
 class Event(object):
     
-    def __init__(self, event_type, event_time, text=None, start=None, end=None):
+    def __init__(self, event_type, event_time):
         """Initialize a new Event
         
         Parameters
         ----------
-        event_type: object of hashable type
+        event_type: hashable
             Type of event
         event_time: int
             Time of event
         """
         self.event_type = event_type
         self.event_time = event_time
-        self.text = text
-        self.start = start
-        self.end = end
-        self = (event_type, event_time)
+    
+    def __str__(self, *args, **kwargs):
+        return '(' + str(self.event_type) + ', ' + str(self.event_time) + ')'
+    
+    def __repr__(self, *args, **kwargs):
+        return self.__str__()
     
     def shift(self, shift):
         self.event_time += shift
         return self
 
 class Episode(tuple):
+
     def __init__(self, sequence_of_event_types):
         self.initialized = [None] * len(sequence_of_event_types)
         self.freq_count = 0
@@ -39,26 +42,73 @@ class Episode(tuple):
         self.initialized = [None] * len(self)
         
 class EventSequence(object):
-    def __init__(self, sequence_of_events, start, end):
-        self.sequence_of_events = sequence_of_events
-        self.start = start
-        self.end = end
 
-    def get_event_sequence(self, count_event_time_by, classificator):
-        if count_event_time_by == 'char':
-            sequence_of_events = [Event(event[classificator], event[CSTART], self, event[START], event[END]) for event in self['events']]
-            start = self['events'][0][CSTART] 
-            end = self['events'][-1][CSTART] + 1 # kas arvutada nii või keerulisemalt? 
-        elif count_event_time_by == 'word':
-            sequence_of_events = [Event(event[classificator], event[WSTART], self, event[START], event[END]) for event in self['events']]
-            start = self['events'][0][WSTART] 
-            end = self['events'][-1][WSTART] + 1 # kas arvutada nii või keerulisemalt? 
+    def __init__(self, **kwargs):
+        """Initialize a new EventSequence
+        
+        Parameters
+        ----------
+        sequence_of_events: list of Event
+            Sequence of events
+        start: int
+            Start of sequence of events.
+        end: int
+            End of sequence of events.
+        event_text: EventText
+            If given, then the parameters ``classsificator`` and 
+            ``determine_event_time`` must also be given.
+        classificator: str
+            Keyword of event_text 'events' layer that points to event type.
+        determine_event_time_by: 'word', 'char'
+            Strategy to determine time of event.
+        """
+        self.sequence_of_events = kwargs.get('sequence_of_events')
+        self.start = kwargs.get('start')
+        self.end = kwargs.get('end')
+        
+        event_text = kwargs.get('event_text')
+        determine_event_time_by = kwargs.get('determine_event_time_by')
+        classificator = kwargs.get('classificator')
+        if event_text != None:
+            if classificator != None and determine_event_time_by != None:
+                self.read_event_text(event_text, determine_event_time_by, classificator)
+            else:
+                raise ValueError('event_text without classificator or determine_event_time_by parameter.')
+
+    def read_event_text(self, event_text, determine_event_time_by, classificator):
+        self.sequence_of_events = []
+        if determine_event_time_by == 'char':
+            for textevent in event_text.events:
+                event = Event(textevent[classificator], textevent[CSTART])
+                event.text = event_text
+                event.start = textevent[START]
+                event.end = textevent[END]
+                self.sequence_of_events.append(event)
+            if self.start == None:
+                self.start = 0
+            if self.end == None: 
+                self.end = event_text.events[-1][CSTART] + len(event_text.text) - event_text.events[-1][END]
+            else:
+                pass # TODO: Kas peaks errorit viskama?  
+        elif determine_event_time_by == 'word':
+            for textevent in event_text.events:
+                event = Event(textevent[classificator], textevent[WSTART])
+                event.text = event_text
+                event.start = textevent[START]
+                event.end = textevent[END]
+                self.sequence_of_events.append(event)
+            if self.start == None:
+                self.start = 0
+            if self.end == None: 
+                end_of_last_event = event_text.events[-1][END]
+                for i in range(len(event_text.words)-1, -1, -1):
+                    if end_of_last_event >= event_text.words[i][END]:
+                        break
+                self.end = len(event_text.words) - i + event_text.events[-1][WSTART] 
+            else:
+                pass # TODO: Kas peaks errorit viskama?  
         else: 
-            sequence_of_events = []
-            start = 0
-            end = 1
-        return EventSequence(sequence_of_events, start, end)
-
+            raise ValueError("determine_event_time_by must be 'char' or 'word'")
 
 
 def find_episode(episode, first_event, event_sequence):
@@ -69,8 +119,7 @@ def find_episode(episode, first_event, event_sequence):
             bookmark += 1
         events.append(event_sequence.sequence_of_events[bookmark])
         bookmark += 1
-    return events
-        
+    return events    
 
 '''Algorithm 5
 T_s = 0, T_e = event_sequence.end
@@ -244,8 +293,40 @@ def candidate_serial_episodes(F):
             j += 1
     return C
 
+def collection_of_frequent_episodes_new(event_sequences, window_width, min_frequency, 
+                                        only_full_windows=False, gaps_skipping=True, 
+                                        number_of_examples=0, **kwargs):
+    """Find frequent serial episodes in event sequences
+    
+    Parameters
+    ----------
+    event_sequences: EventSequence, list of EventSequence
+        One or more ``EventSequence`` to search for frequent episodes
+    window_width: int
+        Width of Winepi window
+    min_frequency: float
+        Minimal frequency (in range [0, 1]) of episodes to search for.
+    only_full_windows: bool
+        If True, the start of the first window is at the start of the sequence of events
+        and the end of the last window is at the end of the sequence of events.
+        If False, the end of the first window is at the start of the sequence of events
+        and the start of the last window is at the end of the sequence of events.
+    gaps_skipping: bool
+        If True, all serial episodes are found
+        If False, only serial episodes with no gaps are found
+    number_of_examples: int
+        Maximum number of examples attached with each episode
+    event_types: list of hashable
+        The event types that are searched for. 
+        If not given, generated from event_sequences
+    
+    Returns
+    -------
+    (list of Episode, dict)
+        List of episodes that have at least min_frequency.
+        Dictionary that maps episodes to examples.
+    """
 
-def collection_of_frequent_episodes_new(event_sequences, window_width, min_frequency, only_full_windows=False, gaps_skipping=True, number_of_examples=0, **kwargs):
     if not isinstance(event_sequences, list):
         event_sequences = [event_sequences]
     
@@ -255,7 +336,6 @@ def collection_of_frequent_episodes_new(event_sequences, window_width, min_frequ
         event_types = set([event.event_type 
                            for event_sequence in event_sequences 
                            for event in event_sequence.sequence_of_events])
-        event_types.discard('*gap*')
     collection_of_episodes = [Episode([event_type]) for event_type in event_types]
 
     number_of_windows = (window_width - 1) * len(event_sequences)
