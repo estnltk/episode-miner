@@ -33,6 +33,7 @@ class Event(object):
         self.event_time += shift
         return self
 
+
 class EventSequence(object):
 
     def __init__(self, **kwargs):
