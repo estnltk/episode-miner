@@ -47,7 +47,7 @@ class EventSequenceTest(unittest.TestCase):
                             {'term': 'seitse'}]    
         event_tagger = EventTagger(event_vocabulary, search_method='naive', conflict_resolving_strategy='ALL')
         event_text = EventText('Arv kakskümmend viis on suurem kui seitse.', event_tagger=event_tagger)
-        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='char')
+        event_sequence = EventSequence(event_text=event_text, classificator='term', time_scale='cstart')
         self.assertEqual(event_sequence.end, 22)
         self.assertEqual(event_sequence.start, 0)
         self.assertEqual(event_sequence.sequence_of_events[0].event_type, 'kakskümmend viis')
@@ -55,7 +55,7 @@ class EventSequenceTest(unittest.TestCase):
         self.assertEqual(event_sequence.sequence_of_events[1].event_type, 'seitse')
         self.assertEqual(event_sequence.sequence_of_events[1].event_time, 20)
 
-        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='word')
+        event_sequence = EventSequence(event_text=event_text, classificator='term', time_scale='wstart')
         self.assertEqual(event_sequence.end, 7)
         self.assertEqual(event_sequence.start, 0)
         self.assertEqual(event_sequence.sequence_of_events[0].event_type, 'kakskümmend viis')
@@ -65,12 +65,12 @@ class EventSequenceTest(unittest.TestCase):
 
 
         event_text = EventText('Sündmusteta tekst.', event_tagger=event_tagger)
-        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='char')
+        event_sequence = EventSequence(event_text=event_text, classificator='term', time_scale='cstart')
         self.assertEqual(event_sequence.start, 0)
         self.assertEqual(event_sequence.end, 18)
         self.assertEqual(len(event_sequence.sequence_of_events), 0)
 
-        event_sequence = EventSequence(event_text=event_text, classificator='term', determine_event_time_by='word')
+        event_sequence = EventSequence(event_text=event_text, classificator='term', time_scale='wstart')
         self.assertEqual(event_sequence.start, 0)
         self.assertEqual(event_sequence.end, 3)
         self.assertEqual(len(event_sequence.sequence_of_events), 0)
