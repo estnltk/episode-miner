@@ -4,6 +4,7 @@ import unicodecsv as csv
 import ahocorasick
 from estnltk.names import START, END
 from pandas import DataFrame
+from sys import version_info
 
 TERM = 'term'
 WSTART = 'wstart'
@@ -15,7 +16,13 @@ class EventTagger(object):
     The events are tagged by several metrics (start, end, cstart, wstart) 
     and user-provided classificators.
     """
-    def __init__(self, event_vocabulary, search_method, conflict_resolving_strategy):
+    def __init__(self, event_vocabulary, search_method='naive', conflict_resolving_strategy='MAX'):
+        if search_method not in ['naive', 'ahocorasick']:
+            raise ValueError("Unknown search_method '%s'." % search_method)
+        if conflict_resolving_strategy not in ['ALL', 'MIN', 'MAX']:
+            raise ValueError("Unknown onflict_resolving_strategy '%s'." % conflict_resolving_strategy)
+        if search_method=='ahocorasick' and version_info.major < 3:
+            raise ValueError("search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
         self.event_vocabulary = self.read_event_vocabulary(event_vocabulary)
         self.search_method = search_method
         self.ahocorasick_automaton = None
@@ -24,11 +31,12 @@ class EventTagger(object):
         Parameters
         ----------
         event_vocabulary: str, pandas.DataFrame, list
-            Vocabulary for events.
+            Vocabulary of events.
+            If ``str`` creates event vocabulary from csv file ``event_vocabulary``
         search_method: 'naive', 'ahocorasic'
-            Method to find events in text.
+            Method to find events in text (default: 'naive').
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
-            Strategy to choose between overlaping events.
+            Strategy to choose between overlaping events (default: 'MAX').
         """
         
     def read_event_vocabulary(self, event_vocabulary):
@@ -107,8 +115,6 @@ class EventTagger(object):
             if len(events) > 1 and events[0][END] >= events[1][END]:
                 del events[0]
             return events
-        else:
-            raise Exception('Invalid conflict resolving strategy.')
 
     
     def event_intervals(self, events, text):                
@@ -142,7 +148,7 @@ class EventTagger(object):
         Parameters
         ----------
         text: Text
-            The text to search for eventst.
+            The text to search for events.
             
         Returns
         -------
@@ -152,8 +158,6 @@ class EventTagger(object):
             events = self.find_events_ahocorasick(text.text)
         elif self.search_method == 'naive':
             events = self.find_events_naive(text.text)
-        else:
-            raise Exception('Invalid method.')
 
         events = self.resolve_conflicts(events)
 
