@@ -1,9 +1,5 @@
 from estnltk.names import START, END
-
-TERM = 'term'
-WSTART = 'wstart'
-WEND = 'wend'
-CSTART = 'cstart'
+from episode_miner import TERM, WSTART, CSTART
 
 class Event(object):
     
