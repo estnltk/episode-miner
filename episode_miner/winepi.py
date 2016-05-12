@@ -56,13 +56,13 @@ class EventSequence(object):
         start: int
             Start of sequence of events.
         end: int
-            End of sequence of events.
+            End of sequence of events. If start > end, ValueError is raised.
         event_text: EventText
             If given, then the parameters ``classsificator`` and 
             ``determine_event_time`` must also be given.
         classificator: str
             Keyword of event_text 'events' layer that points to event type.
-        determine_event_time_by: 'word', 'char'
+        time_scale: 'start', 'end', 'cstart', 'wstart', 
             Strategy to determine time of event.
         """
         self.sequence_of_events = kwargs.get('sequence_of_events')
@@ -70,42 +70,26 @@ class EventSequence(object):
         self.end = kwargs.get('end')
         
         event_text = kwargs.get('event_text')
-        determine_event_time_by = kwargs.get('determine_event_time_by')
+        time_scale = kwargs.get('time_scale')
         classificator = kwargs.get('classificator')
         if event_text != None:
-            if classificator != None and determine_event_time_by != None:
-                self.read_event_text(event_text, determine_event_time_by, classificator)
+            if classificator != None and time_scale != None:
+                self.extract_event_sequence_from_event_text(event_text, time_scale, classificator)
             else:
-                raise ValueError('event_text without classificator or determine_event_time_by parameter.')
+                raise ValueError('event_text without classificator or time_scale parameter.')
 
-    def read_event_text(self, event_text, determine_event_time_by, classificator):
-        self.sequence_of_events = []
-        if determine_event_time_by == 'char':
-            for textevent in event_text.events:
-                event = Event(textevent[classificator], textevent[CSTART])
-                event.text = event_text
-                event.start = textevent[START]
-                event.end = textevent[END]
-                self.sequence_of_events.append(event)
-            if self.start == None:
-                self.start = 0
-            if self.end == None: 
+    def extract_event_sequence_from_event_text(self, event_text, time_scale=START, classificator=TERM):
+        if self.start == None:
+            self.start = 0
+        if self.end == None: 
+            if time_scale in [START, END]:
+                self.end = len(event_text.text)
+            elif time_scale == CSTART:
                 if len(event_text.events) > 0:
                     self.end = event_text.events[-1][CSTART] + len(event_text.text) - event_text.events[-1][END] + 1
                 else:
                     self.end = len(event_text.text)
-            else:
-                pass # TODO: Kas peaks errorit viskama?  
-        elif determine_event_time_by == 'word':
-            for textevent in event_text.events:
-                event = Event(textevent[classificator], textevent[WSTART])
-                event.text = event_text
-                event.start = textevent[START]
-                event.end = textevent[END]
-                self.sequence_of_events.append(event)
-            if self.start == None:
-                self.start = 0
-            if self.end == None: 
+            elif time_scale == WSTART:
                 if len(event_text.events) > 0:
                     end_of_last_event = event_text.events[-1][END]
                     for i in range(len(event_text.words)-1, -1, -1):
@@ -114,10 +98,19 @@ class EventSequence(object):
                     self.end = len(event_text.words) - i + event_text.events[-1][WSTART]
                 else:
                     self.end = len(event_text.words)
-            else:
-                pass # TODO: Kas peaks errorit viskama?  
-        else: 
-            raise ValueError("determine_event_time_by must be 'char' or 'word'")
+            else: 
+                raise ValueError("time_scale must be either %s, %s, %s or %s" %START %END %CSTART %WSTART)
+        if self.start > self.end:
+            raise ValueError("start > end")
+
+        self.sequence_of_events = []
+        for textevent in event_text.events:
+            if self.start <= textevent[time_scale] < self.end:
+                event = Event(textevent[classificator], textevent[time_scale])
+                event.text = event_text
+                event.start = textevent[START]
+                event.end = textevent[END]
+                self.sequence_of_events.append(event)
 
 
 def find_episode(episode, first_event, event_sequence):
