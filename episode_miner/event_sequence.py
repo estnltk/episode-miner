@@ -21,10 +21,13 @@ class Event(object):
     
     def __repr__(self, *args, **kwargs):
         return self.__str__()
-    
-    def __eq__(self, *args, **kwargs):
-        return object.__eq__(self, *args, **kwargs)
-    
+        
+    def __eq__(self, episode):
+        return self.event_type == episode.event_type and self.event_time == episode.event_time
+
+    def __lt__(self, episode):
+        return self.event_time < episode.event_time
+
     def shift(self, shift):
         self.event_time += shift
         return self
@@ -63,6 +66,9 @@ class EventSequence(object):
                 self.extract_event_sequence_from_event_text(event_text, time_scale, classificator)
             else:
                 raise ValueError('event_text without classificator or time_scale parameter.')
+        self.sequence_of_events = [event for event in self.sequence_of_events 
+                                   if self.start <= event.event_time < self.end]
+        self.sequence_of_events.sort()
 
     def extract_event_sequence_from_event_text(self, event_text, time_scale=START, classificator=TERM):
         if self.start == None:

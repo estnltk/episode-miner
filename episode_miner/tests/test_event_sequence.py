@@ -7,6 +7,11 @@ class EventTest(unittest.TestCase):
         self.assertEqual(event.event_type, 'midagi')
         self.assertEqual(event.event_time, 23)
 
+    def test_lt(self):
+        self.assertTrue(Event(2, 2) < Event(1, 3))
+        self.assertFalse(Event(1, 2) < Event(2, 2))
+        self.assertFalse(Event(1, 4) < Event(2, 3))
+
     def test_shift(self):
         event = Event('midagi', 23)
         event.shift(7)
@@ -16,12 +21,28 @@ class EventTest(unittest.TestCase):
 class EventSequenceTest(unittest.TestCase):
     
     def test_simple_initialization(self):
-        sequence_of_events = [Event('üks', 5), Event('kaks', 9), Event('kolm', 13)]
-        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=1, end=16)
+        sequence_of_events = [
+                              Event('kuus', 15),
+                              Event('seitse', 16),
+                              Event('kaks', 9), 
+                              Event('kolm', 13),
+                              Event('üks', 5), 
+                              Event('viis', 14),
+                              Event('neli', 13)
+                              ]
+        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=9, end=15)
+        sequence_of_events_result = [
+                              Event('kaks', 9), 
+                              Event('kolm', 13),
+                              Event('neli', 13),
+                              Event('viis', 14)
+                              ]
         
-        self.assertListEqual(event_sequence.sequence_of_events, sequence_of_events)
-        self.assertEqual(event_sequence.start, 1)
-        self.assertEqual(event_sequence.end, 16)
+        self.assertEqual(event_sequence.start, 9)
+        self.assertEqual(event_sequence.end, 15)
+        self.assertListEqual(event_sequence.sequence_of_events, sequence_of_events_result)
+
+
     
     def test_initialization_by_EventText(self):
         event_vocabulary = [{'term': 'kakskümmend viis'}, 
