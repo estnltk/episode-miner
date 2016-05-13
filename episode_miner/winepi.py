@@ -8,6 +8,9 @@ class Episode(tuple):
         self.relative_frequency = 0
         self.inwindow = None
         self = sequence_of_event_types
+
+    def __repr__(self, *args, **kwargs):
+        return str(self.freq_count) + ' ' + super(Episode, self).__repr__()
         
     def reset_initialized(self):
         self.initialized = [None] * len(self)
@@ -195,9 +198,9 @@ def candidate_serial_episodes(F):
             j += 1
     return C
 
-def collection_of_frequent_episodes_new(event_sequences, window_width, min_frequency, 
-                                        only_full_windows=False, gaps_skipping=True, 
-                                        number_of_examples=0, **kwargs):
+def collection_of_frequent_episodes(event_sequences, window_width, min_frequency, 
+                                    only_full_windows=False, gaps_skipping=True, 
+                                    number_of_examples=0, **kwargs):
     """Find frequent serial episodes in event sequences
     
     Parameters
@@ -270,7 +273,7 @@ def collection_of_frequent_episodes_new(event_sequences, window_width, min_frequ
 
 '''Algorithm 2
 '''
-def collection_of_frequent_episodes(event_sequence, event_types, window_width, min_frequency, number_of_examples=0):
+def collection_of_frequent_episodes_old(event_sequence, event_types, window_width, min_frequency, number_of_examples=0):
     if isinstance(event_sequence, list):
         concatenation_of_sequences_of_events = []
         shift = 0
