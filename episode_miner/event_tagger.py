@@ -7,6 +7,8 @@ from pandas import DataFrame
 from sys import version_info
 
 TERM = 'term'
+WSTART_RAW = 'wstart_raw'
+WEND_RAW = 'wend_raw'
 WSTART = 'wstart'
 WEND = 'wend'
 CSTART = 'cstart'
@@ -119,27 +121,30 @@ class EventTagger(object):
     
     def event_intervals(self, events, text):                
         bookmark = 0
+        overlapping_events = False
+        last_end = 0
         for event in events:
-            event[WSTART] = len(text.word_spans)
-            event[WEND] = 0
+            if last_end > event[START]:
+                overlapping_events = True
+            last_end = event[END]
+            event[WSTART_RAW] = len(text.word_spans)
+            event[WEND_RAW] = 0
             for i in range(bookmark, len(text.word_spans)-1):
                 if text.word_spans[i][0] <= event[START] < text.word_spans[i+1][0]:
-                    event[WSTART] = i
+                    event[WSTART_RAW] = i
                     bookmark = i
                 if text.word_spans[i][0] < event[END] <= text.word_spans[i+1][0]:
-                    event[WEND] = i + 1
+                    event[WEND_RAW] = i + 1
                     break
-
-        w_shift = 0
-        c_shift = 0
-        for event in events:
-            event[WSTART] -= w_shift
-            event[WEND] -= w_shift
-            w_shift += event[WEND] - event[WSTART] - 1
-            del event[WEND]
-
-            event[CSTART] = event[START] - c_shift
-            c_shift += event[END] - event[START] - 1
+        if not overlapping_events:
+            w_shift = 0
+            c_shift = 0
+            for event in events:
+                event[WSTART] = event[WSTART_RAW] - w_shift
+                w_shift += event[WEND_RAW] - event[WSTART_RAW] - 1
+    
+                event[CSTART] = event[START] - c_shift
+                c_shift += event[END] - event[START] - 1
         return events
 
     def tag_events(self, text):

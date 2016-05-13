@@ -111,8 +111,8 @@ class EventTaggerTest(unittest.TestCase):
         text = Text('Harva esineb peavalu.')
         event_tagger = EventTagger(event_vocabulary, 'naive', 'ALL')
         result = event_tagger.tag_events(text)
-        expected = [{'cstart': 0, 'start': 0, 'end': 4, 'type': 'sagedus', 'wstart': 0, 'term': 'Harv'}, 
-                    {'cstart': 10, 'start': 13, 'end': 20, 'type': 'sümptom', 'wstart': 2, 'term': 'peavalu'}]
+        expected = [{'term':    'Harv', 'type': 'sagedus', 'start':  0, 'end':  4, 'wstart_raw': 0, 'wend_raw': 1, 'cstart':  0, 'wstart': 0}, 
+                    {'term': 'peavalu', 'type': 'sümptom', 'start': 13, 'end': 20, 'wstart_raw': 2, 'wend_raw': 3, 'cstart': 10, 'wstart': 2}]
         self.assertListEqual(expected, result)
 
 
@@ -124,9 +124,8 @@ class EventTaggerTest(unittest.TestCase):
         text = Text('Üks kaks kolm neli.')
         event_tagger = EventTagger(event_vocabulary, 'naive', 'ALL')
         result = event_tagger.tag_events(text)
-        expected = [{'cstart': 4, 'end': 13, 'start': 4, 'term': 'kaks kolm', 'wstart': 1},
-                    {'cstart': -4, 'end': 18, 'start': 4, 'term': 'kaks kolm neli', 'wstart': 0},
-                    {'cstart': -12, 'end': 18, 'start': 9, 'term': 'kolm neli', 'wstart': -1},
-                    {'cstart': -15, 'end': 18, 'start': 14, 'term': 'neli', 'wstart': -1}]
-
+        expected = [{'term': 'kaks kolm',      'start':  4, 'end': 13, 'wstart_raw': 1, 'wend_raw': 3},
+                    {'term': 'kaks kolm neli', 'start':  4, 'end': 18, 'wstart_raw': 1, 'wend_raw': 4},
+                    {'term': 'kolm neli',      'start':  9, 'end': 18, 'wstart_raw': 2, 'wend_raw': 4},
+                    {'term': 'neli',           'start': 14, 'end': 18, 'wstart_raw': 3, 'wend_raw': 4}]
         self.assertListEqual(expected, result)
