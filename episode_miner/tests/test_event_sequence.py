@@ -13,6 +13,12 @@ class EventTest(unittest.TestCase):
         self.assertFalse(Event(1, 2) < Event(2, 2))
         self.assertFalse(Event(1, 4) < Event(2, 3))
 
+    def test_eq(self):
+        self.assertTrue(Event(1, 2) == Event(1, 2))
+        self.assertFalse(Event(None, None) == None)
+        self.assertFalse(Event(1, 2) == Event(2, 2))
+        self.assertFalse(Event(1, 4) == Event(1, 3))
+
     def test_shift(self):
         event = Event('midagi', 23)
         event.shift(7)

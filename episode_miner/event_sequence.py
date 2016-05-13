@@ -22,8 +22,10 @@ class Event(object):
     def __repr__(self, *args, **kwargs):
         return self.__str__()
         
-    def __eq__(self, episode):
-        return self.event_type == episode.event_type and self.event_time == episode.event_time
+    def __eq__(self, event):
+        if not isinstance(event, Event):
+            return False
+        return self.event_type == event.event_type and self.event_time == event.event_time
 
     def __lt__(self, episode):
         return self.event_time < episode.event_time
