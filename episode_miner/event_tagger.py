@@ -18,10 +18,11 @@ DEFAULT_METHOD = 'ahocorasick' if version_info.major >= 3 else 'naive'
 
 
 class EventTagger(object):
-    """A class that finds a list of events from Text object based on user-provided vocabulary. 
-    The events are tagged by several metrics (start, end, cstart, wstart) 
+    """A class that finds a list of events from Text object based on user-provided vocabulary.
+    The events are tagged by several metrics (start, end, cstart, wstart)
     and user-provided classificators.
     """
+    #TODO: What are cstart, wstart, wend?
 
     def __init__(self, event_vocabulary, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX',
                  return_layer=False, layer_name='events'):
@@ -36,10 +37,12 @@ class EventTagger(object):
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
             Strategy to choose between overlaping events (default: 'MAX').
         return_layer: bool
-            if True, EventTagger.tag(text) returns a layer. If False, EventTagger.tag(text) annotates the text object with the layer.
+            if True, EventTagger.tag(text) returns a layer. If False, EventTagger.tag(text) annotates the text object with the layer instead.
         layer_name: str
             if return_layer is False, EventTagger.tag(text) annotates to this layer of the text object. Default 'events'
         """
+        #TODO: Explain the structure of event_vocabulary in docstring.
+        #TODO: Explain the different conflict resolution strategies in docstring.
         self.layer_name = layer_name
         self.return_layer = return_layer
         if search_method not in ['naive', 'ahocorasick']:
