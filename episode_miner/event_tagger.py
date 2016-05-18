@@ -21,17 +21,7 @@ class EventTagger(object):
     The events are tagged by several metrics (start, end, cstart, wstart) 
     and user-provided classificators.
     """
-    def __init__(self, event_vocabulary, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX'):
-        if search_method not in ['naive', 'ahocorasick']:
-            raise ValueError("Unknown search_method '%s'." % search_method)
-        if conflict_resolving_strategy not in ['ALL', 'MIN', 'MAX']:
-            raise ValueError("Unknown onflict_resolving_strategy '%s'." % conflict_resolving_strategy)
-        if search_method=='ahocorasick' and version_info.major < 3:
-            raise ValueError("search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
-        self.event_vocabulary = self.__read_event_vocabulary(event_vocabulary)
-        self.search_method = search_method
-        self.ahocorasick_automaton = None
-        self.conflict_resolving_strategy = conflict_resolving_strategy
+    def __init__(self, event_vocabulary, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX', return_layer = False, layer_name = 'events'):
         """Initialize a new EventTagger instance.
         Parameters
         ----------
@@ -42,7 +32,23 @@ class EventTagger(object):
             Method to find events in text (default: 'naive' for python2 and 'ahocorasick' for python3).
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
             Strategy to choose between overlaping events (default: 'MAX').
+        return_layer: bool
+            if True, EventTagger.tag(text) returns a layer. If False, EventTagger.tag(text) annotates the text object with the layer.
+        layer_name: str
+            if return_layer is False, EventTagger.tag(text) annotates to this layer of the text object. Default 'events'
         """
+        self.layer_name = layer_name
+        self.return_layer = return_layer
+        if search_method not in ['naive', 'ahocorasick']:
+            raise ValueError("Unknown search_method '%s'." % search_method)
+        if conflict_resolving_strategy not in ['ALL', 'MIN', 'MAX']:
+            raise ValueError("Unknown onflict_resolving_strategy '%s'." % conflict_resolving_strategy)
+        if search_method=='ahocorasick' and version_info.major < 3:
+            raise ValueError("search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
+        self.event_vocabulary = self.__read_event_vocabulary(event_vocabulary)
+        self.search_method = search_method
+        self.ahocorasick_automaton = None
+        self.conflict_resolving_strategy = conflict_resolving_strategy
 
     @staticmethod
     def __read_event_vocabulary(event_vocabulary):
@@ -171,4 +177,8 @@ class EventTagger(object):
         events = self.__resolve_conflicts(events)
 
         self.__event_intervals(events, text)
-        return events
+
+        if self.return_layer:
+            return events
+        else:
+            text[self.layer_name] = events

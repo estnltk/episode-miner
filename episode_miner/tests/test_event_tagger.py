@@ -110,7 +110,7 @@ class EventTaggerTest(unittest.TestCase):
         event_vocabulary = [{'term': 'Harv', 'type': 'sagedus'}, 
                             {'term': 'peavalu', 'type': 'sümptom'}]
         text = Text('Harva esineb peavalu.')
-        event_tagger = EventTagger(event_vocabulary, 'naive', 'ALL')
+        event_tagger = EventTagger(event_vocabulary, 'naive', 'ALL', return_layer=True)
         result = event_tagger.tag(text)
         expected = [{'term':    'Harv', 'type': 'sagedus', 'start':  0, 'end':  4, 'wstart_raw': 0, 'wend_raw': 1, 'cstart':  0, 'wstart': 0}, 
                     {'term': 'peavalu', 'type': 'sümptom', 'start': 13, 'end': 20, 'wstart_raw': 2, 'wend_raw': 3, 'cstart': 10, 'wstart': 2}]
@@ -123,7 +123,7 @@ class EventTaggerTest(unittest.TestCase):
                             {'term': 'kaks kolm'},
                             {'term': 'kaks kolm neli'}]
         text = Text('Üks kaks kolm neli.')
-        event_tagger = EventTagger(event_vocabulary, 'naive', 'ALL')
+        event_tagger = EventTagger(event_vocabulary, 'naive', 'ALL', return_layer=True)
         result = event_tagger.tag(text)
         expected = [{'term': 'kaks kolm',      'start':  4, 'end': 13, 'wstart_raw': 1, 'wend_raw': 3},
                     {'term': 'kaks kolm neli', 'start':  4, 'end': 18, 'wstart_raw': 1, 'wend_raw': 4},
