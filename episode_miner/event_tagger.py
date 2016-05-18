@@ -13,7 +13,7 @@ WSTART = 'wstart'
 WEND = 'wend'
 CSTART = 'cstart'
 
-DEFAULT_METHOD = 'ahocorasick' if version_info >= 3 else 'naive'
+DEFAULT_METHOD = 'ahocorasick' if version_info.major >= 3 else 'naive'
 
 
 class EventTagger(object):
@@ -43,7 +43,7 @@ class EventTagger(object):
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
             Strategy to choose between overlaping events (default: 'MAX').
         """
-        
+
     @staticmethod
     def __read_event_vocabulary(event_vocabulary):
         if isinstance(event_vocabulary, list):
@@ -60,7 +60,7 @@ class EventTagger(object):
             raise TypeError("%s not supported as event_vocabulary" %type(event_vocabulary))
         if len(event_vocabulary) == 0:
             return []
-        if (START  in event_vocabulary[0] or 
+        if (START  in event_vocabulary[0] or
             END    in event_vocabulary[0] or
             WSTART in event_vocabulary[0] or
             WEND   in event_vocabulary[0] or
@@ -122,7 +122,7 @@ class EventTagger(object):
                 del events[0]
             return events
 
-    
+
     def __event_intervals(self, events, text):
         bookmark = 0
         overlapping_events = False
@@ -146,12 +146,12 @@ class EventTagger(object):
             for event in events:
                 event[WSTART] = event[WSTART_RAW] - w_shift
                 w_shift += event[WEND_RAW] - event[WSTART_RAW] - 1
-    
+
                 event[CSTART] = event[START] - c_shift
                 c_shift += event[END] - event[START] - 1
         return events
 
-    def tag_events(self, text):
+    def tag(self, text):
         """Retrieves list of events in text.
         
         Parameters
