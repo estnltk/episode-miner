@@ -1,10 +1,11 @@
 from __future__ import unicode_literals
 
-import unicodecsv as csv
+from sys import version_info
+
 import ahocorasick
+import unicodecsv as csv
 from estnltk.names import START, END
 from pandas import DataFrame
-from sys import version_info
 
 TERM = 'term'
 WSTART_RAW = 'wstart_raw'
@@ -21,7 +22,9 @@ class EventTagger(object):
     The events are tagged by several metrics (start, end, cstart, wstart) 
     and user-provided classificators.
     """
-    def __init__(self, event_vocabulary, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX', return_layer = False, layer_name = 'events'):
+
+    def __init__(self, event_vocabulary, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX',
+                 return_layer=False, layer_name='events'):
         """Initialize a new EventTagger instance.
         Parameters
         ----------
@@ -43,8 +46,9 @@ class EventTagger(object):
             raise ValueError("Unknown search_method '%s'." % search_method)
         if conflict_resolving_strategy not in ['ALL', 'MIN', 'MAX']:
             raise ValueError("Unknown onflict_resolving_strategy '%s'." % conflict_resolving_strategy)
-        if search_method=='ahocorasick' and version_info.major < 3:
-            raise ValueError("search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
+        if search_method == 'ahocorasick' and version_info.major < 3:
+            raise ValueError(
+                    "search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
         self.event_vocabulary = self.__read_event_vocabulary(event_vocabulary)
         self.search_method = search_method
         self.ahocorasick_automaton = None
@@ -63,14 +67,14 @@ class EventTagger(object):
                 for row in reader:
                     event_vocabulary.append(row)
         else:
-            raise TypeError("%s not supported as event_vocabulary" %type(event_vocabulary))
+            raise TypeError("%s not supported as event_vocabulary" % type(event_vocabulary))
         if len(event_vocabulary) == 0:
             return []
-        if (START  in event_vocabulary[0] or
-            END    in event_vocabulary[0] or
-            WSTART in event_vocabulary[0] or
-            WEND   in event_vocabulary[0] or
-            CSTART in event_vocabulary[0]):
+        if (START in event_vocabulary[0] or
+                    END in event_vocabulary[0] or
+                    WSTART in event_vocabulary[0] or
+                    WEND in event_vocabulary[0] or
+                    CSTART in event_vocabulary[0]):
             raise KeyError('Illegal key in event vocabulary.')
         if TERM not in event_vocabulary[0]:
             raise KeyError("Missing key '" + TERM + "' in event vocabulary.")
@@ -82,8 +86,8 @@ class EventTagger(object):
             start = text.find(entry[TERM])
             while start > -1:
                 events.append(entry.copy())
-                events[-1].update({START: start, END: start+len(entry[TERM])})
-                start = text.find(entry[TERM], start+1)
+                events[-1].update({START: start, END: start + len(entry[TERM])})
+                start = text.find(entry[TERM], start + 1)
         return events
 
     def __find_events_ahocorasick(self, text):
@@ -95,7 +99,7 @@ class EventTagger(object):
             self.ahocorasick_automaton.make_automaton()
         for item in self.ahocorasick_automaton.iter(text):
             events.append(item[1].copy())
-            events[-1].update({START: item[0]+1-len(item[1][TERM]), END: item[0]+1})
+            events[-1].update({START: item[0] + 1 - len(item[1][TERM]), END: item[0] + 1})
         return events
 
     def __resolve_conflicts(self, events):
@@ -107,11 +111,11 @@ class EventTagger(object):
             if len(events) < 2:
                 return events
             bookmark = 0
-            while bookmark < len(events)-1 and events[0][START] == events[bookmark+1][START]:
+            while bookmark < len(events) - 1 and events[0][START] == events[bookmark + 1][START]:
                 bookmark += 1
             new_events = [events[bookmark]]
-            for i in range(bookmark+1, len(events)-1):
-                if events[i][END] > new_events[-1][END] and events[i][START] != events[i+1][START]:
+            for i in range(bookmark + 1, len(events) - 1):
+                if events[i][END] > new_events[-1][END] and events[i][START] != events[i + 1][START]:
                     new_events.append(events[i])
             if events[-1][END] > new_events[-1][END]:
                 new_events.append(events[-1])
@@ -121,8 +125,8 @@ class EventTagger(object):
                 return events
             while len(events) > 1 and events[-1][START] == events[-2][START]:
                 del events[-1]
-            for i in range(len(events)-2, 0, -1):
-                if events[i][START] == events[i-1][START] or events[i][END] >= events[i+1][END]:
+            for i in range(len(events) - 2, 0, -1):
+                if events[i][START] == events[i - 1][START] or events[i][END] >= events[i + 1][END]:
                     del events[i]
             if len(events) > 1 and events[0][END] >= events[1][END]:
                 del events[0]
@@ -139,11 +143,11 @@ class EventTagger(object):
             last_end = event[END]
             event[WSTART_RAW] = len(text.word_spans)
             event[WEND_RAW] = 0
-            for i in range(bookmark, len(text.word_spans)-1):
-                if text.word_spans[i][0] <= event[START] < text.word_spans[i+1][0]:
+            for i in range(bookmark, len(text.word_spans) - 1):
+                if text.word_spans[i][0] <= event[START] < text.word_spans[i + 1][0]:
                     event[WSTART_RAW] = i
                     bookmark = i
-                if text.word_spans[i][0] < event[END] <= text.word_spans[i+1][0]:
+                if text.word_spans[i][0] < event[END] <= text.word_spans[i + 1][0]:
                     event[WEND_RAW] = i + 1
                     break
         if not overlapping_events:
