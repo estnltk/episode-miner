@@ -1,5 +1,8 @@
-from estnltk.names import START, END
+from estnltk.names import TEXT, START, END
 from episode_miner import TERM, WSTART, CSTART
+from estnltk import PrettyPrinter
+from estnltk.prettyprinter import HEADER, MIDDLE, FOOTER
+from cached_property import cached_property
 
 class Event(object):
     
@@ -60,18 +63,49 @@ class EventSequence(object):
         self.start = kwargs.get('start')
         self.end = kwargs.get('end')
         
-        event_text = kwargs.get('event_text')
+        self.event_text = kwargs.get('event_text')
         time_scale = kwargs.get('time_scale')
         classificator = kwargs.get('classificator')
-        if event_text != None:
+        if self.event_text != None:
             if classificator != None and time_scale != None:
-                self.extract_event_sequence_from_event_text(event_text, time_scale, classificator)
+                self.extract_event_sequence_from_event_text(self.event_text, time_scale, classificator)
             else:
                 raise ValueError('event_text without classificator or time_scale parameter.')
         self.sequence_of_events = [event for event in self.sequence_of_events 
                                    if self.start <= event.event_time < self.end]
         self.sequence_of_events.sort()
 
+    def __str__(self, *args, **kwargs):
+        return '(' + str(self.sequence_of_events) + ", start: " + str(self.start) + ", end: " + str(self.end) + ')'
+    
+    def __repr__(self, *args, **kwargs):
+        return self.__str__()
+    
+    @cached_property
+    def rules(self):
+        colors = ('red', 'green', 'blue', 'cyan', 'magenta', 'yellow', 
+          'pink','lime', 'peru', 'orange', 'lightgray', 'gray')
+        rules = []
+        i = 0
+        for event_type in {event.event_type for event in self.sequence_of_events}:
+            rules.append((event_type, colors[i]))
+            i = (i + 1) % len(colors)
+        return rules
+
+    
+    def pretty_print(self, **kwargs):
+        sequence_of_events_generator = kwargs.get('sequence_of_events_generator', [self.sequence_of_events])
+        html = ''
+        for sequence_of_events in sequence_of_events_generator:
+            def event_tags(_):
+                return ({TEXT: event.event_type, START: event.start, END: event.end} 
+                        for event in sequence_of_events)
+            pp = PrettyPrinter(background=event_tags, background_value=self.rules)
+            html += '\t\t<p>' + pp.render(self.event_text, False) + '</p>\n'
+
+        html = '\n'.join([HEADER, pp.css, MIDDLE, html, FOOTER])
+        return html
+        
     def extract_event_sequence_from_event_text(self, event_text, time_scale=START, classificator=TERM):
         if self.start == None:
             self.start = 0
@@ -105,3 +139,40 @@ class EventSequence(object):
                 event.start = textevent[START]
                 event.end = textevent[END]
                 self.sequence_of_events.append(event)
+
+    def find_episode_examples_recursion(self, episode, start, window_width, depth):
+        # TODO: pooleli
+        if window_width < 1: return
+        sequence = self.sequence_of_events
+        if depth == 0:
+            yield []
+            return
+        for i in range(start, len(sequence)):
+            if sequence[i].event_type != episode[-depth]:
+                continue
+            interval = 0
+            if depth != len(episode):
+                interval = sequence[i].event_time - sequence[start-1].event_time
+            for cc in self.find_episode_examples_recursion(episode, i+1, window_width-interval, depth-1):
+                yield [sequence[i]] + cc
+
+    def find_episode_examples_no_gap_skip(self, episode, start, window_width, depth):
+        # TODO: kas on optimaalne?
+        if window_width < 1: return
+        sequence = self.sequence_of_events
+        if depth == 0:
+            yield []
+            return        
+        for i in range(start, len(sequence)):
+            if sequence[i].event_type != episode[-depth]:
+                continue
+            interval = 0
+            if depth != len(episode):
+                interval = sequence[i].event_time - sequence[start-1].event_time
+            for cc in self.find_episode_examples_recursion(episode, i+1, window_width-interval, depth-1):
+                yield [sequence[i]] + cc
+
+    def find_episode_examples(self, episode, window_width):
+        episode_examples = self.find_episode_examples_recursion(episode, self.start, window_width, len(episode))
+        for example in episode_examples:
+            yield example

@@ -93,3 +93,21 @@ class EventSequenceTest(unittest.TestCase):
         self.assertEqual(event_sequence.start, 0)
         self.assertEqual(event_sequence.end, 3)
         self.assertEqual(len(event_sequence.sequence_of_events), 0)
+
+    def test_find_examples(self):
+        sequence_of_events = [
+                              Event('a', 1),
+                              Event('b', 2),
+                              Event('b', 3), 
+                              Event('a', 4),
+                              Event('c', 5),
+                              Event('b', 6), 
+                              Event('c', 6)
+                              ]
+        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=0, end=7)
+        result = event_sequence.find_episode_examples(('a', 'b'), 3)
+        result = tuple(result)
+        expected = ([Event('a', 1), Event('b', 2)], 
+                    [Event('a', 1), Event('b', 3)], 
+                    [Event('a', 4), Event('b', 6)])
+        self.assertTupleEqual(result, expected)
