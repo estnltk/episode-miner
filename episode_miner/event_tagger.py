@@ -28,7 +28,7 @@ class EventTagger(object):
             raise ValueError("Unknown onflict_resolving_strategy '%s'." % conflict_resolving_strategy)
         if search_method=='ahocorasick' and version_info.major < 3:
             raise ValueError("search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
-        self.event_vocabulary = self.read_event_vocabulary(event_vocabulary)
+        self.event_vocabulary = self.__read_event_vocabulary(event_vocabulary)
         self.search_method = search_method
         self.ahocorasick_automaton = None
         self.conflict_resolving_strategy = conflict_resolving_strategy
@@ -44,7 +44,8 @@ class EventTagger(object):
             Strategy to choose between overlaping events (default: 'MAX').
         """
         
-    def read_event_vocabulary(self, event_vocabulary):
+    @staticmethod
+    def __read_event_vocabulary(event_vocabulary):
         if isinstance(event_vocabulary, list):
             event_vocabulary = event_vocabulary
         elif isinstance(event_vocabulary, DataFrame):
@@ -69,7 +70,7 @@ class EventTagger(object):
             raise KeyError("Missing key '" + TERM + "' in event vocabulary.")
         return event_vocabulary
 
-    def find_events_naive(self, text):
+    def __find_events_naive(self, text):
         events = []
         for entry in self.event_vocabulary:
             start = text.find(entry[TERM])
@@ -79,7 +80,7 @@ class EventTagger(object):
                 start = text.find(entry[TERM], start+1)
         return events
 
-    def find_events_ahocorasick(self, text):
+    def __find_events_ahocorasick(self, text):
         events = []
         if self.ahocorasick_automaton == None:
             self.ahocorasick_automaton = ahocorasick.Automaton()
@@ -91,7 +92,7 @@ class EventTagger(object):
             events[-1].update({START: item[0]+1-len(item[1][TERM]), END: item[0]+1})
         return events
 
-    def resolve_conflicts(self, events):
+    def __resolve_conflicts(self, events):
         events.sort(key=lambda event: event[END])
         events.sort(key=lambda event: event[START])
         if self.conflict_resolving_strategy == 'ALL':
@@ -122,7 +123,7 @@ class EventTagger(object):
             return events
 
     
-    def event_intervals(self, events, text):                
+    def __event_intervals(self, events, text):
         bookmark = 0
         overlapping_events = False
         last_end = 0
@@ -163,11 +164,11 @@ class EventTagger(object):
         list of events sorted by start, end
         """
         if self.search_method == 'ahocorasick':
-            events = self.find_events_ahocorasick(text.text)
+            events = self.__find_events_ahocorasick(text.text)
         elif self.search_method == 'naive':
-            events = self.find_events_naive(text.text)
+            events = self.__find_events_naive(text.text)
 
-        events = self.resolve_conflicts(events)
+        events = self.__resolve_conflicts(events)
 
-        self.event_intervals(events, text)
+        self.__event_intervals(events, text)
         return events
