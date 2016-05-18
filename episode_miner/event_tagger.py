@@ -13,12 +13,15 @@ WSTART = 'wstart'
 WEND = 'wend'
 CSTART = 'cstart'
 
+DEFAULT_METHOD = 'ahocorasick' if version_info >= 3 else 'naive'
+
+
 class EventTagger(object):
     """A class that finds a list of events from Text object based on user-provided vocabulary. 
     The events are tagged by several metrics (start, end, cstart, wstart) 
     and user-provided classificators.
     """
-    def __init__(self, event_vocabulary, search_method='naive', conflict_resolving_strategy='MAX'):
+    def __init__(self, event_vocabulary, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX'):
         if search_method not in ['naive', 'ahocorasick']:
             raise ValueError("Unknown search_method '%s'." % search_method)
         if conflict_resolving_strategy not in ['ALL', 'MIN', 'MAX']:
@@ -36,7 +39,7 @@ class EventTagger(object):
             Vocabulary of events.
             If ``str`` creates event vocabulary from csv file ``event_vocabulary``
         search_method: 'naive', 'ahocorasic'
-            Method to find events in text (default: 'naive').
+            Method to find events in text (default: 'naive' for python2 and 'ahocorasick' for python3).
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
             Strategy to choose between overlaping events (default: 'MAX').
         """
