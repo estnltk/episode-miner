@@ -6,6 +6,7 @@ class Episode(tuple):
         self.freq_count = 0
         self.relative_frequency = 0
         self.inwindow = None
+        self.has_gaps = None# True / False
         self = sequence_of_event_types
 
     def __repr__(self, *args, **kwargs):
