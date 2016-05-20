@@ -54,7 +54,7 @@ class KeywordTagger(object):
         self.conflict_resolving_strategy = conflict_resolving_strategy
 
 
-    def _find_events_naive(self, text):
+    def _find_keywords_naive(self, text):
         events = []
         for entry in self.keyword_sequence:
             start = text.find(entry)
@@ -121,7 +121,7 @@ class KeywordTagger(object):
         if self.search_method == 'ahocorasick':
             events = self._find_keywords_ahocorasick(text.text)
         elif self.search_method == 'naive':
-            events = self._find_events_naive(text.text)
+            events = self._find_keywords_naive(text.text)
 
         events = self._resolve_conflicts(events)
 
