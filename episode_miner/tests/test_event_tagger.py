@@ -11,34 +11,34 @@ class EventTaggerTest(unittest.TestCase):
         # empty list
         events = []
         print(dir(event_tagger))
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = []
         self.assertListEqual(expected, result)
 
         # one event
         events = [{START: 1, END:  4}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  4}]
         self.assertListEqual(expected, result)
 
         # equal events
         events = [{START: 1, END:  4},
                   {START: 1, END:  4}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  4}]
         self.assertListEqual(expected, result)
 
         # common start
         events = [{START: 1, END:  4},
                   {START: 1, END:  6}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  6}]
         self.assertListEqual(expected, result)
 
         # common end
         events = [{START: 3, END:  6},
                   {START: 1, END:  6}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  6}]
         self.assertListEqual(expected, result)
 
@@ -46,7 +46,7 @@ class EventTaggerTest(unittest.TestCase):
         events = [{START: 1, END:  8},
                   {START: 2, END:  4},
                   {START: 3, END:  6}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  8}]
         self.assertListEqual(expected, result)        
 
@@ -54,34 +54,34 @@ class EventTaggerTest(unittest.TestCase):
         event_tagger = EventTagger([], 'naive', 'MIN')
         # empty list
         events = []
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = []
         self.assertListEqual(expected, result)
 
         # one event
         events = [{START: 1, END:  4}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  4}]
         self.assertListEqual(expected, result)
 
         # equal events
         events = [{START: 1, END:  4},
                   {START: 1, END:  4}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  4}]
         self.assertListEqual(expected, result)
 
         # common start
         events = [{START: 1, END:  4},
                   {START: 1, END:  6}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  4}]
         self.assertListEqual(expected, result)
 
         # common end
         events = [{START: 3, END:  6},
                   {START: 1, END:  6}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 3, END:  6}]
         self.assertListEqual(expected, result)
 
@@ -89,7 +89,7 @@ class EventTaggerTest(unittest.TestCase):
         events = [{START: 1, END:  8},
                   {START: 2, END:  4},
                   {START: 3, END:  6}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 2, END:  4},
                     {START: 3, END:  6}]
         self.assertListEqual(expected, result)        
@@ -100,7 +100,7 @@ class EventTaggerTest(unittest.TestCase):
         events = [{START: 1, END:  8},
                   {START: 2, END:  4},
                   {START: 3, END:  6}]
-        result = event_tagger._EventTagger__resolve_conflicts(events)
+        result = event_tagger._resolve_conflicts(events)
         expected = [{START: 1, END:  8},
                     {START: 2, END:  4},
                     {START: 3, END:  6}]
