@@ -26,7 +26,7 @@ class KeywordTagger(object):
         """Initialize a new KeywordTagger instance.
         Parameters
         ----------
-        keyword_sequence: list-like
+        keyword_sequence: list-like or dict-like
             sequence of keywords to annotate
         search_method: 'naive', 'ahocorasic'
             Method to find events in text (default: 'naive' for python2 and 'ahocorasick' for python3).
@@ -39,7 +39,14 @@ class KeywordTagger(object):
         """
         if keyword_sequence is None:
             raise ValueError("Can't really do something without keywords")
-        self.keyword_sequence = keyword_sequence
+        if hasattr(keyword_sequence, 'get'):
+            # I think we got a dict-like
+            self.keyword_sequence = list(keyword_sequence.keys())
+            self.mapping = True
+            self.map = keyword_sequence
+        else:
+            self.keyword_sequence = keyword_sequence
+            self.mapping = False
         self.layer_name = layer_name
         self.return_layer = return_layer
         if search_method not in ['naive', 'ahocorasick']:
@@ -124,6 +131,11 @@ class KeywordTagger(object):
             events = self._find_keywords_naive(text.text)
 
         events = self._resolve_conflicts(events)
+        if self.mapping:
+            for item in events:
+                item['type'] = self.map[
+                        text.text[item['start']:item['end']]
+                        ]
 
         if self.return_layer:
             return events
