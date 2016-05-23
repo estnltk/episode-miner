@@ -54,7 +54,7 @@ class EventSequenceTest(unittest.TestCase):
     def test_initialization_by_EventText(self):
         event_vocabulary = [{'term': 'kakskümmend viis'}, 
                             {'term': 'seitse'}]    
-        event_tagger = EventTagger(event_vocabulary, search_method='naive', conflict_resolving_strategy='ALL')
+        event_tagger = EventTagger(event_vocabulary, search_method='naive', conflict_resolving_strategy='ALL', return_layer=True)
         event_text = EventText('Arv kakskümmend viis on suurem kui seitse.', event_tagger=event_tagger)
 
         event_sequence = EventSequence(event_text=event_text, classificator='term', time_scale='start')
