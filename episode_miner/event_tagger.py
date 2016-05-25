@@ -29,10 +29,10 @@ class KeywordTagger(object):
         ----------
         keyword_sequence: list-like or dict-like
             sequence of keywords to annotate
-        search_method: 'naive', 'ahocorasic'
+        search_method: 'naive', 'ahocorasick'
             Method to find events in text (default: 'naive' for python2 and 'ahocorasick' for python3).
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
-            Strategy to choose between overlaping events (default: 'MAX').
+            Strategy to choose between overlapping events (default: 'MAX').
         return_layer: bool
             if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.
         layer_name: str
@@ -146,13 +146,13 @@ class KeywordTagger(object):
 class RegexTagger(KeywordTagger):
     def __init__(self, regex_sequence=None, conflict_resolving_strategy='MAX', return_layer=False,
                  layer_name='regexes'):
-        """Initialize a new KeywordTagger instance.
+        """Initialize a new RegexTagger instance.
         Parameters
         ----------
         regex_sequence: list-like or dict-like
             sequence of regexes to annotate
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
-            Strategy to choose between overlaping events (default: 'MAX').
+            Strategy to choose between overlapping events (default: 'MAX').
         return_layer: bool
             if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.
         layer_name: str
@@ -160,11 +160,12 @@ class RegexTagger(KeywordTagger):
         """
         if regex_sequence is None:
             raise ValueError("Can't really do something without keywords")
-        if hasattr(regex_sequence, 'get'):
-            # I think we got a dict-like
-            self.regex_sequence = list(regex_sequence.keys())
+        if isinstance(regex_sequence, DataFrame):
+            # I think we got a dataframe
+            self.header = regex_sequence.index.name
+            self.map = regex_sequence.to_dict('index')
+            self.regex_sequence = list(self.map.keys())
             self.mapping = True
-            self.map = regex_sequence
         else:
             self.regex_sequence = regex_sequence
             self.mapping = False
@@ -208,12 +209,17 @@ class RegexTagger(KeywordTagger):
 
         for r in seq:
             for matchobj in re.finditer(r, text, overlapped=True):
+                result =  {
+                    'start': matchobj.start(),
+                    'end': matchobj.end(),
+                    'regex': r
+                }
+                for k, v in self.map[r].items():
+                    if k not in result.keys():
+                        result[k] = v
+
                 matches.append(
-                    {
-                        'start': matchobj.start(),
-                        'end': matchobj.end(),
-                        'regex': r
-                    }
+                    result
                 )
 
         return matches
@@ -235,10 +241,10 @@ class EventTagger(KeywordTagger):
         event_vocabulary: str, pandas.DataFrame, list
             Vocabulary of events.
             If ``str`` creates event vocabulary from csv file ``event_vocabulary``
-        search_method: 'naive', 'ahocorasic'
+        search_method: 'naive', 'ahocorasick'
             Method to find events in text (default: 'naive' for python2 and 'ahocorasick' for python3).
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
-            Strategy to choose between overlaping events (default: 'MAX').
+            Strategy to choose between overlapping events (default: 'MAX').
         return_layer: bool
             if True, EventTagger.tag(text) returns a layer. If False, EventTagger.tag(text) annotates the text object with the layer instead.
         layer_name: str
