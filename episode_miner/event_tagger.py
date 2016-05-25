@@ -189,11 +189,11 @@ class RegexTagger(KeywordTagger):
         """
         matches = self._match(text.text)
         matches = self._resolve_conflicts(matches)
-        if self.mapping:
-            for item in matches:
-                item['type'] = self.map[
-                    item['regex']
-                ]
+        # if self.mapping:
+        #     for item in matches:
+        #         item['type'] = self.map[
+        #             item['regex']
+        #         ]
 
         if self.return_layer:
             return matches
