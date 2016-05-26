@@ -189,11 +189,6 @@ class RegexTagger(KeywordTagger):
         """
         matches = self._match(text.text)
         matches = self._resolve_conflicts(matches)
-        # if self.mapping:
-        #     for item in matches:
-        #         item['type'] = self.map[
-        #             item['regex']
-        #         ]
 
         if self.return_layer:
             return matches
@@ -209,10 +204,12 @@ class RegexTagger(KeywordTagger):
 
         for r in seq:
             for matchobj in re.finditer(r, text, overlapped=True):
-                result =  {
+                groups = (matchobj.groupdict())
+                result = {
                     'start': matchobj.start(),
                     'end': matchobj.end(),
-                    'regex': r
+                    'regex': r,
+                    'groups':groups
                 }
                 for k, v in self.map[r].items():
                     if k not in result.keys():
