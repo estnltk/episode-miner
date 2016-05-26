@@ -162,6 +162,13 @@ class RegexTagger(KeywordTagger):
             raise ValueError("Can't really do something without keywords")
         if isinstance(regex_sequence, DataFrame):
             # I think we got a dataframe
+            restricted_words = set(['groups', 'start', 'end', 'regex'])
+            columns = set(regex_sequence.columns)
+            if columns.intersection(restricted_words):
+                banned = ', '.join(list(columns.intersection(restricted_words)))
+                raise ValueError('Illegal column names in dataframe: {}'.format(banned))
+
+
             self.header = regex_sequence.index.name
             self.map = regex_sequence.to_dict('index')
             self.regex_sequence = list(self.map.keys())
