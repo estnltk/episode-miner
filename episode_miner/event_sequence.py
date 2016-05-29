@@ -5,6 +5,7 @@ from estnltk.prettyprinter import HEADER, MIDDLE, FOOTER
 from cached_property import cached_property
 
 class Event(object):
+    """An event is a pair of event type and event time."""
     
     def __init__(self, event_type, event_time):
         """Initialize a new Event
@@ -34,11 +35,19 @@ class Event(object):
         return self.event_time < episode.event_time
 
     def shift(self, shift):
+        """Change time of event.
+        
+        Parameters
+        ----------
+        shift: int
+            The amount of time to to add to the time of event.
+        """
         self.event_time += shift
         return self
 
 
 class EventSequence(object):
+    """An event sequence is a triple of sequence of events, start and end."""
 
     def __init__(self, **kwargs):
         """Initialize a new EventSequence
@@ -68,7 +77,7 @@ class EventSequence(object):
         classificator = kwargs.get('classificator')
         if self.event_text != None:
             if classificator != None and time_scale != None:
-                self.extract_event_sequence_from_event_text(self.event_text, time_scale, classificator)
+                self._extract_event_sequence_from_event_text(self.event_text, time_scale, classificator)
             else:
                 raise ValueError('event_text without classificator or time_scale parameter.')
         self.sequence_of_events = [event for event in self.sequence_of_events 
@@ -82,7 +91,7 @@ class EventSequence(object):
         return self.__str__()
     
     @cached_property
-    def rules(self):
+    def _rules(self):
         colors = ('red', 'green', 'blue', 'cyan', 'magenta', 'yellow', 
           'pink','lime', 'peru', 'orange', 'lightgray', 'gray')
         rules = []
@@ -100,13 +109,13 @@ class EventSequence(object):
             def event_tags(_):
                 return ({TEXT: event.event_type, START: event.start, END: event.end} 
                         for event in sequence_of_events)
-            pp = PrettyPrinter(background=event_tags, background_value=self.rules)
+            pp = PrettyPrinter(background=event_tags, background_value=self._rules)
             html += '\t\t<p>' + pp.render(self.event_text, False) + '</p>\n'
 
         html = '\n'.join([HEADER, pp.css, MIDDLE, html, FOOTER])
         return html
         
-    def extract_event_sequence_from_event_text(self, event_text, time_scale=START, classificator=TERM):
+    def _extract_event_sequence_from_event_text(self, event_text, time_scale=START, classificator=TERM):
         if self.start == None:
             self.start = 0
         if self.end == None: 
@@ -140,8 +149,8 @@ class EventSequence(object):
                 event.end = textevent[END]
                 self.sequence_of_events.append(event)
 
-    def find_episode_examples_recursion(self, episode, start, window_width, depth):
-        # TODO: pooleli
+    def _find_episode_examples_intermediate_events_allowed(self, episode, start, window_width, depth):
+        if len(episode) == 0: return        
         if window_width < 1: return
         sequence = self.sequence_of_events
         if depth == 0:
@@ -153,26 +162,58 @@ class EventSequence(object):
             interval = 0
             if depth != len(episode):
                 interval = sequence[i].event_time - sequence[start-1].event_time
-            for cc in self.find_episode_examples_recursion(episode, i+1, window_width-interval, depth-1):
+                if interval == 0: continue
+            for cc in self._find_episode_examples_intermediate_events_allowed(episode, i+1, window_width-interval, depth-1):
                 yield [sequence[i]] + cc
 
-    def find_episode_examples_no_gap_skip(self, episode, start, window_width, depth):
-        # TODO: kas on optimaalne?
-        if window_width < 1: return
+    def _find_episode_examples_no_intermediate_events(self, episode, window_width):
+        if len(episode) == 0: return        
         sequence = self.sequence_of_events
-        if depth == 0:
-            yield []
-            return        
-        for i in range(start, len(sequence)):
-            if sequence[i].event_type != episode[-depth]:
-                continue
-            interval = 0
-            if depth != len(episode):
-                interval = sequence[i].event_time - sequence[start-1].event_time
-            for cc in self.find_episode_examples_recursion(episode, i+1, window_width-interval, depth-1):
-                yield [sequence[i]] + cc
+        for i in range(len(sequence)-len(episode)+1):
+            if sequence[i].event_type == episode[0]:
+                example = [sequence[i]]
+                if len(episode) == 1: 
+                    yield example
+                    continue
+                for j in range(i+1, len(sequence)):
+                    if sequence[j].event_time == example[-1].event_time:
+                        continue
+                    if sequence[j].event_time - example[0].event_time >= window_width:
+                        break
+                    if sequence[j].event_type == episode[len(example)]:
+                        example.append(sequence[j])
+                    elif j+1==len(sequence) or sequence[j].event_time < sequence[j+1].event_time:
+                        break
+                    if len(example) == len(episode):
+                        yield example
+                        break
 
-    def find_episode_examples(self, episode, window_width):
-        episode_examples = self.find_episode_examples_recursion(episode, self.start, window_width, len(episode))
+    def find_episode_examples(self, episode, window_width, allow_intermediate_events=None):
+        """Find episode examples
+        
+        Parameters
+        ----------
+        episode: Episode
+            Winepi episode.
+        window_width: int
+            Width of Winepi window.
+        allow_intermediate_events: bool
+            Default: episode.allow_intermediate_events
+            If True, all serial episodes are found.
+            If False, only serial episodes with no intermediate events are found.
+
+        Returns
+        -------
+        generator
+            Generator for examples. 
+        """
+        if allow_intermediate_events == None: 
+            allow_intermediate_events = episode.allow_intermediate_events
+        if allow_intermediate_events == None: 
+            raise TypeError("no positional argument 'allow_intermediate_events' and no attribute 'episode.allow_intermediate_events'")
+        if allow_intermediate_events:
+            episode_examples = self._find_episode_examples_intermediate_events_allowed(episode, 0, window_width, len(episode))
+        else:
+            episode_examples = self._find_episode_examples_no_intermediate_events(episode, window_width)
         for example in episode_examples:
             yield example
