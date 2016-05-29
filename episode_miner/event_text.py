@@ -34,3 +34,4 @@ class EventText(Text):
         """Tags events in this Text instance. Creates ``events`` layer."""
         self[EVENTS] = self.__event_tagger.tag(self)
         return self 
+    
