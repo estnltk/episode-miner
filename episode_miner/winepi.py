@@ -1,30 +1,37 @@
+from episode_miner.event_sequence import EventSequence
 
 class Episode(tuple):
 
     def __init__(self, sequence_of_event_types):
-        self.initialized = [None] * len(sequence_of_event_types)
-        self.freq_count = 0
-        self.relative_frequency = 0
-        self.inwindow = None
-        self.has_gaps = None# True / False
+        self._initialized = [None] * len(sequence_of_event_types)
+        self._inwindow = None
+        self.abs_support = 0
+        self.rel_support = 0
+        self.allow_intermediate_events = None
         self = sequence_of_event_types
 
     def __repr__(self, *args, **kwargs):
-        return str(self.freq_count) + ' ' + super(Episode, self).__repr__()
+        return str(self.abs_support) + ' ' + super(Episode, self).__repr__()
         
     def reset_initialized(self):
-        self.initialized = [None] * len(self)
+        self._initialized = [None] * len(self)
+
+    def reset_support(self):
+        self.abs_support = 0
+        self.rel_support = 0
 
 
-def episode_frequences(event_sequence, collection_of_serial_episodes, window_width, only_full_windows, gaps_skipping):
+def episode_frequences(event_sequence, collection_of_serial_episodes, window_width, only_full_windows, allow_intermediate_events):
     if len(event_sequence.sequence_of_events) == 0: 
         return collection_of_serial_episodes
     waits = {}
     for episode in collection_of_serial_episodes:
         episode.reset_initialized()
         waits.setdefault(episode[0], []).append((episode, 0))
-    waits_copy = (waits).copy() 
-    last_event_time = event_sequence.sequence_of_events[0].event_time
+    waits_init = {}
+    for key in waits:
+        waits_init[key] = waits[key].copy()          
+
     beginsat = {} 
             
     event_dict = {}
@@ -36,64 +43,92 @@ def episode_frequences(event_sequence, collection_of_serial_episodes, window_wid
         if start + window_width - 1 < event_sequence.end:
             removes = []
             appends = []
+            event_in_dict = False
             for event in event_dict.setdefault(start+window_width-1, []):#get hoopis?
-                if not gaps_skipping and event.event_time-last_event_time > 1:
-                    waits = waits_copy.copy()
-                    last_event_time = event.event_time
+                event_in_dict = True
                 waits.setdefault(event.event_type, []).sort(key = lambda pair: pair[1], reverse = True)
                 for episode, j in waits[event.event_type]: 
                     if j == 0:
-                        episode.initialized[0] = event
+                        episode._initialized[0] = event
                         if len(episode) == 1:
-                            beginsat[episode.initialized[0].event_time].append(episode)
-                            if episode.inwindow == None:
-                                episode.inwindow = start
+                            beginsat[episode._initialized[0].event_time].append(episode)
+                            if episode._inwindow == None:
+                                episode._inwindow = start
                                 if only_full_windows and start < 0:
-                                    episode.inwindow = 0
+                                    episode._inwindow = 0
                         else:
                             appends.append((episode, 1))                    
                     elif j < len(episode) - 1: 
-                        episode.initialized[j] = None
-                        if episode.initialized[j-1] != None and episode.initialized[j-1].event_time > start: # seda saab täpsustada
-                            episode.initialized[j] = episode.initialized[j-1]
+                        episode._initialized[j] = None
+                        if episode._initialized[j-1] != None and episode._initialized[j-1].event_time > start: # seda saab täpsustada
+                            episode._initialized[j] = episode._initialized[j-1]
                             appends.append((episode, j+1))
                         removes.append((episode, j))
                     elif j == len(episode) - 1:
-                        if episode.initialized[j] == None and episode.initialized[j-1] != None and episode.initialized[j-1].event_time >= start:
-                            episode.inwindow = start
+                        if episode._initialized[j] == None and episode._initialized[j-1] != None and episode._initialized[j-1].event_time >= start:
+                            episode._inwindow = start
                             if only_full_windows and start < 0:
-                                episode.inwindow = 0
-                        if episode.initialized[j-1] != None and episode.initialized[j-1].event_time >= start:
-                            episode.initialized[j] = episode.initialized[j-1]
-                            beginsat[episode.initialized[j].event_time].append(episode)
+                                episode._inwindow = 0
+                        if episode._initialized[j-1] != None and episode._initialized[j-1].event_time >= start:
+                            episode._initialized[j] = episode._initialized[j-1]
+                            beginsat[episode._initialized[j].event_time].append(episode)
                         removes.append((episode, j))
-                for episode, j in removes:
-                    waits[episode[j]].remove((episode, j))            
+            if event_in_dict:
+                if allow_intermediate_events:
+                    for episode, j in removes:
+                        waits[episode[j]].remove((episode, j))
+                else:
+                    waits = {}
+                    for key in waits_init:
+                        waits[key] = waits_init[key].copy()          
                 for episode, j in appends:
                     waits.setdefault(episode[j], []).append((episode, j))
         
         if start >= 0:
             for episode in beginsat[start]:
-                if episode.initialized[-1] != None and episode.initialized[-1].event_time == start:
-                    episode.freq_count += episode.initialized[-1].event_time - episode.inwindow + 1
+                if episode._initialized[-1] != None and episode._initialized[-1].event_time == start:
+                    episode.abs_support += episode._initialized[-1].event_time - episode._inwindow + 1
                     if only_full_windows and start + window_width > event_sequence.end:
-                        episode.freq_count -= start + window_width - event_sequence.end
-                    episode.inwindow = None
-                    episode.initialized[-1] = None
+                        episode.abs_support -= start + window_width - event_sequence.end
+                    episode._inwindow = None
+                    episode._initialized[-1] = None
         if start in beginsat:
             del beginsat[start]
 
     return collection_of_serial_episodes
 
-'''Algoritm 3
-'''
-def candidate_serial_episodes(F):
+def candidate_serial_episodes(F, allow_intermediate_events):
+    """Find candidates for frequent serial episodes
+    
+    Parameters
+    ----------
+    F: list of Episode
+        List of episodes of length n
+    allow_intermediate_events: bool
+        If True, episodes may have intermediate events
+        If False, episodes don't skip events
+    
+    Returns
+    -------
+    list of Episode
+        List of episodes of length n+1. 
+        If allow_intermediate_events==True, every subepisode (with length n) of episode is in F.
+        If allow_intermediate_events==False, for every episode e, e[1:] and e[:-1] are in F.
+    """
     if len(F) == 0: return [] 
+    C = []
+    if not allow_intermediate_events:
+        for i in range(len(F)):
+            for j in range(len(F)):
+                if F[i][1:] == F[j][:-1]:
+                    episode = F[i] + (F[j][-1],)
+                    C.append(Episode(episode))
+        return C
+
     F_block_start = list(range(len(F)))
     for k in range(1, len(F)):
         if F[k - 1][:-1] == F[k][:-1]:
             F_block_start[k] = F_block_start[k - 1]
-    C = []
     k = -1
     l = len(F[0])
     C_block_start = []
@@ -118,8 +153,11 @@ def candidate_serial_episodes(F):
             j += 1
     return C
 
-def collection_of_frequent_episodes(event_sequences, window_width, min_frequency, 
-                                    only_full_windows=False, gaps_skipping=True, **kwargs):
+
+def find_sequential_episodes(event_sequences, window_width, min_frequency, 
+                                    only_full_windows=False, 
+                                    allow_intermediate_events=True, 
+                                    **kwargs):
     """Find frequent serial episodes in event sequences
     
     Parameters
@@ -135,32 +173,32 @@ def collection_of_frequent_episodes(event_sequences, window_width, min_frequency
         and the end of the last window is at the end of the sequence of events.
         If False, the end of the first window is at the start of the sequence of events
         and the start of the last window is at the end of the sequence of events.
-    gaps_skipping: bool
-        If True, all serial episodes are found
-        If False, only serial episodes with no gaps are found
-    number_of_examples: int
-        Maximum number of examples attached with each episode
+    allow_intermediate_events: bool
+        default: True
+        If True, all serial episodes are found.
+        If False, only serial episodes with no intermediate events are found.
     event_types: list of hashable
         The event types that are searched for. 
         If not given, generated from event_sequences
     
     Returns
     -------
-    (list of Episode, dict)
+    list of Episode
         List of episodes that have at least min_frequency.
-        Dictionary that maps episodes to examples.
     """
 
-    if not isinstance(event_sequences, list):
+    if isinstance(event_sequences, EventSequence):
         event_sequences = [event_sequences]
+
+    episodes = kwargs.get('episodes')
     
-    if 'event_types' in kwargs:
-        event_types = kwargs['event_types']
-    else:
+    event_types = kwargs.get('event_types')
+    collection_of_episodes = None
+    if event_types == None and episodes == None:
         event_types = set([event.event_type 
                            for event_sequence in event_sequences 
                            for event in event_sequence.sequence_of_events])
-    collection_of_episodes = [Episode([event_type]) for event_type in event_types]
+        collection_of_episodes = [Episode((event_type,)) for event_type in event_types]
 
     number_of_windows = (window_width - 1) * len(event_sequences)
     if only_full_windows:
@@ -171,16 +209,138 @@ def collection_of_frequent_episodes(event_sequences, window_width, min_frequency
             print('Winepi: Event sequence shorter than window width.')
 
     frequent_episodes = []
-    while len(collection_of_episodes) > 0:
+    if collection_of_episodes != None:
+        while len(collection_of_episodes) > 0:
+            for event_sequence in event_sequences:
+                episode_frequences(event_sequence, collection_of_episodes, window_width, only_full_windows, allow_intermediate_events)
+    
+            new_frequent_episodes = []
+            for episode in collection_of_episodes:
+                episode.rel_support = episode.abs_support / number_of_windows
+                if episode.rel_support >= min_frequency:
+                    episode.allow_intermediate_events = allow_intermediate_events
+                    new_frequent_episodes.append(episode)
+            collection_of_episodes = candidate_serial_episodes(new_frequent_episodes, allow_intermediate_events)
+            frequent_episodes += new_frequent_episodes
+    else:
         for event_sequence in event_sequences:
-            episode_frequences(event_sequence, collection_of_episodes, window_width, only_full_windows, gaps_skipping)
-
-        new_frequent_episodes = []
-        for episode in collection_of_episodes:
-            episode.relative_frequency = episode.freq_count / number_of_windows
-            if episode.relative_frequency >= min_frequency:
-                new_frequent_episodes.append(episode)
-        collection_of_episodes = candidate_serial_episodes(new_frequent_episodes)
-        frequent_episodes += new_frequent_episodes
+            episode_frequences(event_sequence, episodes, window_width, only_full_windows, allow_intermediate_events)
+        for episode in episodes:
+            episode.rel_support = episode.abs_support / number_of_windows
+            if episode.rel_support >= min_frequency:
+                frequent_episodes.append(episode)
     return frequent_episodes
+
+
+
+def _support(event_sequences, episodes, window_width,
+             support_type, 
+             only_full_windows, 
+             allow_intermediate_events):
+    """Find absolute Winepi frequency for an episode
+    
+    Parameters
+    ----------
+    event_sequences: EventSequence, list of EventSequence
+        One or more ``EventSequence`` to search for frequent episodes
+    episode: Episode
+        The episode for which absolute or relative support is found.
+    window_width: int
+        Width of Winepi window
+    support_type: str
+        Support type 'abs' or 'rel'.
+    only_full_windows: bool
+        If True, the start of the first window is at the start of the sequence of events
+        and the end of the last window is at the end of the sequence of events.
+        If False, the end of the first window is at the start of the sequence of events
+        and the start of the last window is at the end of the sequence of events.
+    allow_intermediate_events: bool
+        default: True
+        If True, all serial episodes are found.
+        If False, only serial episodes with no intermediate events are found.
+    
+    Returns
+    -------
+    int or float
+        Absolute frequency of the episode if support_type=='abs'.
+        Relative frequency of the episode if support_type=='rel'.
+    """
+    
+    if support_type not in ('abs', 'rel'):
+        raise ValueError("unknown support type '%s'." % support_type)
+
+    if isinstance(episodes, Episode):
+        episodes = [episodes]
+    for episode in episodes:
+        episode.reset_support()
+        episode.allow_intermediate_events = allow_intermediate_events
+
+    episodes = find_sequential_episodes(event_sequences, window_width, 0, 
+                                        only_full_windows, 
+                                        allow_intermediate_events,
+                                        episodes=episodes)
+    if support_type == 'rel':
+        return [episode.rel_support for episode in episodes]
+    elif support_type == 'abs':
+        return [episode.abs_support for episode in episodes]
+
+def abs_support(event_sequences, episodes, window_width, only_full_windows=False, 
+                allow_intermediate_events=True):
+    """Find absolute Winepi frequency for an episode.
+    
+    Parameters
+    ----------
+    event_sequences: EventSequence, list of EventSequence
+        One or more ``EventSequence`` to search for frequent episodes
+    episode: Episode
+        The episode for which absolute support is found.
+    window_width: int
+        Width of Winepi window
+    only_full_windows: bool
+        If True, the start of the first window is at the start of the sequence of events
+        and the end of the last window is at the end of the sequence of events.
+        If False, the end of the first window is at the start of the sequence of events
+        and the start of the last window is at the end of the sequence of events.
+    allow_intermediate_events: bool
+        default: True
+        If True, all serial episodes are found.
+        If False, only serial episodes with no intermediate events are found.
+    
+    Returns
+    -------
+    int
+        Absolute frequencies of the episodes.
+    """
+    
+    return _support(event_sequences, episodes, window_width, 'abs', only_full_windows, allow_intermediate_events)
+
+
+def rel_support(event_sequences, episodes, window_width, only_full_windows=False, 
+                allow_intermediate_events=True):
+    """Find absolute Winepi frequency for an episode
+    
+    Parameters
+    ----------
+    event_sequences: EventSequence, list of EventSequence
+        One or more ``EventSequence`` to search for frequent episodest
+    episodes: Episode, list of Episode
+        the episode for which relative support is found.
+    window_width: int
+        Width of Winepi window
+    only_full_windows: bool
+        If True, the start of the first window is at the start of the sequence of events
+        and the end of the last window is at the end of the sequence of events.
+        If False, the end of the first window is at the start of the sequence of events
+        and the start of the last window is at the end of the sequence of events.
+    allow_intermediate_events: bool
+        default: True
+        If True, all serial episodes are found.
+        If False, only serial episodes with no intermediate events are found.
+    
+    Returns
+    -------
+    list of float
+        Relative frequencies of the episodes.
+    """
+    return _support(event_sequences, episodes, window_width, 'rel', only_full_windows, allow_intermediate_events)
 
