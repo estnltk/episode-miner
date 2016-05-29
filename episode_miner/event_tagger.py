@@ -11,7 +11,6 @@ TERM = 'term'
 WSTART_RAW = 'wstart_raw'
 WEND_RAW = 'wend_raw'
 WSTART = 'wstart'
-WEND = 'wend'
 CSTART = 'cstart'
 
 DEFAULT_METHOD = 'ahocorasick' if version_info.major >= 3 else 'naive'
@@ -24,6 +23,7 @@ class KeywordTagger(object):
     def __init__(self, keyword_sequence=None, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX',
                  return_layer=False, layer_name='keywords'):
         """Initialize a new KeywordTagger instance.
+
         Parameters
         ----------
         keyword_sequence: list-like or dict-like
@@ -144,35 +144,72 @@ class KeywordTagger(object):
 
 
 class EventTagger(KeywordTagger):
-    """A class that finds a list of events from Text object based on user-provided vocabulary.
-    The events are tagged by several metrics (start, end, cstart, wstart)
-    and user-provided classificators.
+    """A class that finds a list of events from Text object based on 
+    user-provided vocabulary. The events are tagged by several metrics (start, 
+    end, cstart, wstart, wstart_raw, wend_raw) and user-provided classificators.
+    
+    The word start ``wstart`` and char start ``cstart`` of an event are 
+    calculated as if all the events consist of one char.  ``cstart`` and 
+    ``wstart`` are calculated only if there is no overlapping events.
+    
+    ``wstart_raw``, ``wend_raw`` show at which word the event starts and ends.
     """
-    #TODO: What are cstart, wstart, wend?
-
-    def __init__(self, event_vocabulary, search_method=DEFAULT_METHOD, conflict_resolving_strategy='MAX',
+    
+    def __init__(self, event_vocabulary, 
+                 search_method=DEFAULT_METHOD, case_sensitive=True, 
+                 conflict_resolving_strategy='MAX',
                  return_layer=False, layer_name='events'):
         """Initialize a new EventTagger instance.
+
         Parameters
         ----------
-        event_vocabulary: str, pandas.DataFrame, list
-            Vocabulary of events.
-            If ``str`` creates event vocabulary from csv file ``event_vocabulary``
+        event_vocabulary: list of dict, str, pandas.DataFrame
+            Vocabulary of events. There must be one key (column) called 'term' 
+            in ``event_vocabulary``. That refers to the strings searched from 
+            the text. Other keys (**type** in following examples) are optional. 
+            No key may have name 'start', 'end', 'cstart', 'wstart', 
+            'wstart_raw' or 'wend_raw'.
+            If ``list of dict``, then every dict in the list is a vocabulary entry. 
+                Example:
+                event_vocabulary = [{'term': 'Harv',    'type': 'sagedus'}, 
+                                    {'term': 'peavalu', 'type': 'sümptom'}]
+            If ``str``, then event vocabulary is read from csv file 
+                ``event_vocabulary``.
+                Example:
+                    term,type
+                    Harv,sagedus
+                    peavalu,sümptom
+            If ``pandas.DataFrame``, then the vocabulary of events is created 
+            from the ``pandas.DataFrame``.
+                Example:
+                event_vocabulary = DataFrame([['Harv',    'sagedus'], 
+                                              ['peavalu', 'sümptom']], 
+                                      columns=['term',    'type'])
         search_method: 'naive', 'ahocorasic'
-            Method to find events in text (default: 'naive' for python2 and 'ahocorasick' for python3).
+            Method to find events in text (default: 'naive' for python2 and 
+            'ahocorasick' for python3).
+        case_sensitive: bool
+            (default: ``True``)
+            If ``True``, then the terms are searched from the text case sensitive.
+            If ``False``, then the terms are searched from the text case insensitive.
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
             Strategy to choose between overlaping events (default: 'MAX').
+            If 'ALL' returns all events.
+            If 'MAX' returns all the events that are not contained by any other event.
+            If 'MIN' returns all the events that don't contain any other event.
         return_layer: bool
-            if True, EventTagger.tag(text) returns a layer. If False, EventTagger.tag(text) annotates the text object with the layer instead.
+            If True, EventTagger.tag(text) returns a layer. 
+            If False, EventTagger.tag(text) annotates the text object with the layer instead.
         layer_name: str
-            if return_layer is False, EventTagger.tag(text) annotates to this layer of the text object. Default 'events'
+            (Default: 'events')
+            If ``return_layer`` is ``False``, EventTagger.tag(text) annotates 
+            to this layer of the text object. 
         """
-        #TODO: Explain the structure of event_vocabulary in docstring.
-        #TODO: Explain the different conflict resolution strategies in docstring.
         self.layer_name = layer_name
         self.return_layer = return_layer
         if search_method not in ['naive', 'ahocorasick']:
             raise ValueError("Unknown search_method '%s'." % search_method)
+        self.case_sensitive = case_sensitive
         if conflict_resolving_strategy not in ['ALL', 'MIN', 'MAX']:
             raise ValueError("Unknown onflict_resolving_strategy '%s'." % conflict_resolving_strategy)
         if search_method == 'ahocorasick' and version_info.major < 3:
@@ -202,21 +239,24 @@ class EventTagger(KeywordTagger):
         if (START in event_vocabulary[0] or
                     END in event_vocabulary[0] or
                     WSTART in event_vocabulary[0] or
-                    WEND in event_vocabulary[0] or
-                    CSTART in event_vocabulary[0]):
+                    CSTART in event_vocabulary[0] or
+                    WSTART_RAW in event_vocabulary[0] or
+                    WEND_RAW in event_vocabulary[0]):
             raise KeyError('Illegal key in event vocabulary.')
         if TERM not in event_vocabulary[0]:
             raise KeyError("Missing key '" + TERM + "' in event vocabulary.")
         return event_vocabulary
 
     def _find_events_naive(self, text):
+        _text = text if self.case_sensitive else text.lower()
         events = []
         for entry in self.event_vocabulary:
-            start = text.find(entry[TERM])
+            term = entry[TERM] if self.case_sensitive else entry[TERM].lower()
+            start = _text.find(term)
             while start > -1:
                 events.append(entry.copy())
                 events[-1].update({START: start, END: start + len(entry[TERM])})
-                start = text.find(entry[TERM], start + 1)
+                start = _text.find(term, start + 1)
         return events
 
     def _find_events_ahocorasick(self, text):
@@ -224,9 +264,11 @@ class EventTagger(KeywordTagger):
         if self.ahocorasick_automaton == None:
             self.ahocorasick_automaton = ahocorasick.Automaton()
             for entry in self.event_vocabulary:
-                self.ahocorasick_automaton.add_word(entry[TERM], entry)
+                term = entry[TERM] if self.case_sensitive else entry[TERM].lower()
+                self.ahocorasick_automaton.add_word(term, entry)
             self.ahocorasick_automaton.make_automaton()
-        for item in self.ahocorasick_automaton.iter(text):
+        _text = text if self.case_sensitive else text.lower()
+        for item in self.ahocorasick_automaton.iter(_text):
             events.append(item[1].copy())
             events[-1].update({START: item[0] + 1 - len(item[1][TERM]), END: item[0] + 1})
         return events
