@@ -1,5 +1,5 @@
 import unittest
-from episode_miner import Event, EventSequence, EventText, EventTagger
+from episode_miner import Event, EventSequence, EventText, EventTagger, Episode
 
 class EventTest(unittest.TestCase):
     
@@ -54,7 +54,7 @@ class EventSequenceTest(unittest.TestCase):
     def test_initialization_by_EventText(self):
         event_vocabulary = [{'term': 'kakskümmend viis'}, 
                             {'term': 'seitse'}]    
-        event_tagger = EventTagger(event_vocabulary, search_method='naive', conflict_resolving_strategy='ALL')
+        event_tagger = EventTagger(event_vocabulary, search_method='naive', conflict_resolving_strategy='ALL', return_layer=True)
         event_text = EventText('Arv kakskümmend viis on suurem kui seitse.', event_tagger=event_tagger)
 
         event_sequence = EventSequence(event_text=event_text, classificator='term', time_scale='start')
@@ -97,17 +97,79 @@ class EventSequenceTest(unittest.TestCase):
     def test_find_examples(self):
         sequence_of_events = [
                               Event('a', 1),
+                              Event('a', 2),
                               Event('b', 2),
                               Event('b', 3), 
                               Event('a', 4),
                               Event('c', 5),
                               Event('b', 6), 
-                              Event('c', 6)
+                              Event('c', 6),
+                              Event('a', 7), 
+                              Event('c', 8)
                               ]
-        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=0, end=7)
-        result = event_sequence.find_episode_examples(('a', 'b'), 3)
+        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=1, end=9)
+        result = event_sequence.find_episode_examples(Episode(('a', 'b')), 
+                                                      window_width=3, 
+                                                      allow_intermediate_events=True)
         result = tuple(result)
         expected = ([Event('a', 1), Event('b', 2)], 
                     [Event('a', 1), Event('b', 3)], 
+                    [Event('a', 2), Event('b', 3)], 
                     [Event('a', 4), Event('b', 6)])
+        self.assertTupleEqual(result, expected)
+
+        result = event_sequence.find_episode_examples(Episode(('a', 'b')), 
+                                                      window_width=3, 
+                                                      allow_intermediate_events=False)
+        result = tuple(result)
+        expected = ([Event('a', 1), Event('b', 2)], 
+                    [Event('a', 2), Event('b', 3)])
+        self.assertTupleEqual(result, expected)
+
+        sequence_of_events = [
+                              Event('b', 1),
+                              Event('a', 2),
+                              Event('b', 3),
+                              Event('a', 4),
+                              Event('b', 5)
+                             ]
+        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=1, end=6)
+        result = event_sequence.find_episode_examples(Episode(('b', 'a', 'b')), 
+                                                      window_width=6, 
+                                                      allow_intermediate_events=True)
+        result = tuple(result)
+        expected = ([Event('b', 1), Event('a', 2), Event('b', 3)], 
+                    [Event('b', 1), Event('a', 2), Event('b', 5)],
+                    [Event('b', 1), Event('a', 4), Event('b', 5)],
+                    [Event('b', 3), Event('a', 4), Event('b', 5)]
+                    )
+        self.assertTupleEqual(result, expected)
+
+        result = event_sequence.find_episode_examples(Episode(('b', 'a', 'b')), 
+                                                      window_width=6, 
+                                                      allow_intermediate_events=False)
+        result = tuple(result)
+        expected = ([Event('b', 1), Event('a', 2), Event('b', 3)], 
+                    [Event('b', 3), Event('a', 4), Event('b', 5)]
+                    )
+        self.assertTupleEqual(result, expected)
+
+        result = event_sequence.find_episode_examples(Episode(('b',)), 
+                                                      window_width=6, 
+                                                      allow_intermediate_events=True)
+        result = tuple(result)
+        expected = ([Event('b', 1)],
+                    [Event('b', 3)],
+                    [Event('b', 5)]
+                    )
+        self.assertTupleEqual(result, expected)
+
+        result = event_sequence.find_episode_examples(Episode(('b',)), 
+                                                      window_width=6, 
+                                                      allow_intermediate_events=False)
+        result = tuple(result)
+        expected = ([Event('b', 1)],
+                    [Event('b', 3)],
+                    [Event('b', 5)]
+                    )
         self.assertTupleEqual(result, expected)
