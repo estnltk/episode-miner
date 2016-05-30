@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
+import ahocorasick
 from sys import version_info
 
-import ahocorasick
+import regex as re
 import unicodecsv as csv
 from estnltk.names import START, END
 from pandas import DataFrame
@@ -28,10 +29,10 @@ class KeywordTagger(object):
         ----------
         keyword_sequence: list-like or dict-like
             sequence of keywords to annotate
-        search_method: 'naive', 'ahocorasic'
+        search_method: 'naive', 'ahocorasick'
             Method to find events in text (default: 'naive' for python2 and 'ahocorasick' for python3).
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
-            Strategy to choose between overlaping events (default: 'MAX').
+            Strategy to choose between overlapping events (default: 'MAX').
         return_layer: bool
             if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.
         layer_name: str
@@ -55,11 +56,10 @@ class KeywordTagger(object):
             raise ValueError("Unknown conflict_resolving_strategy '%s'." % conflict_resolving_strategy)
         if search_method == 'ahocorasick' and version_info.major < 3:
             raise ValueError(
-                    "search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
+                "search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
         self.search_method = search_method
         self.ahocorasick_automaton = None
         self.conflict_resolving_strategy = conflict_resolving_strategy
-
 
     def _find_keywords_naive(self, text):
         events = []
@@ -123,7 +123,7 @@ class KeywordTagger(object):
 
         Returns
         -------
-        list of events sorted by start, end
+        list of vents sorted by start, end
         """
         if self.search_method == 'ahocorasick':
             events = self._find_keywords_ahocorasick(text.text)
@@ -134,13 +134,99 @@ class KeywordTagger(object):
         if self.mapping:
             for item in events:
                 item['type'] = self.map[
-                        text.text[item['start']:item['end']]
-                        ]
+                    text.text[item['start']:item['end']]
+                ]
 
         if self.return_layer:
             return events
         else:
             text[self.layer_name] = events
+
+
+class RegexTagger(KeywordTagger):
+    def __init__(self, regex_sequence=None, conflict_resolving_strategy='MAX', return_layer=False,
+                 layer_name='regexes'):
+        """Initialize a new RegexTagger instance.
+        Parameters
+        ----------
+        regex_sequence: list-like or dict-like
+            sequence of regexes to annotate
+        conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
+            Strategy to choose between overlapping events (default: 'MAX').
+        return_layer: bool
+            if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.
+        layer_name: str
+            if return_layer is False, KeywordTagger.tag(text) annotates to this layer of the text object. Default 'keywords'
+        """
+        if regex_sequence is None:
+            raise ValueError("Can't really do something without keywords")
+        if isinstance(regex_sequence, DataFrame):
+            # I think we got a dataframe
+            restricted_words = set(['groups', 'start', 'end', 'regex'])
+            columns = set(regex_sequence.columns)
+            if columns.intersection(restricted_words):
+                banned = ', '.join(list(columns.intersection(restricted_words)))
+                raise ValueError('Illegal column names in dataframe: {}'.format(banned))
+
+
+            self.header = regex_sequence.index.name
+            self.map = regex_sequence.to_dict('index')
+            self.regex_sequence = list(self.map.keys())
+            self.mapping = True
+        else:
+            self.regex_sequence = regex_sequence
+            self.mapping = False
+        self.layer_name = layer_name
+        self.return_layer = return_layer
+        if conflict_resolving_strategy not in ['ALL', 'MIN', 'MAX']:
+            raise ValueError("Unknown conflict_resolving_strategy '%s'." % conflict_resolving_strategy)
+        self.conflict_resolving_strategy = conflict_resolving_strategy
+
+    def tag(self, text):
+        """Retrieves list of regex_matches in text.
+
+        Parameters
+        ----------
+        text: Text
+            The estnltk text object to search for events.
+
+        Returns
+        -------
+        list of matches
+        """
+        matches = self._match(text.text)
+        matches = self._resolve_conflicts(matches)
+
+        if self.return_layer:
+            return matches
+        else:
+            text[self.layer_name] = matches
+
+    def _match(self, text):
+        matches = []
+        if self.mapping:
+            seq = self.map.keys()
+        else:
+            seq = self.regex_sequence
+
+        for r in seq:
+            for matchobj in re.finditer(r, text, overlapped=True):
+                groups = (matchobj.groupdict())
+                result = {
+                    'start': matchobj.start(),
+                    'end': matchobj.end(),
+                    'regex': r,
+                    'groups':groups
+                }
+                for k, v in self.map[r].items():
+                    if k not in result.keys():
+                        result[k] = v
+
+                matches.append(
+                    result
+                )
+
+        return matches
 
 
 class EventTagger(KeywordTagger):
@@ -157,7 +243,7 @@ class EventTagger(KeywordTagger):
     
     def __init__(self, event_vocabulary, 
                  search_method=DEFAULT_METHOD, case_sensitive=True, 
-                 conflict_resolving_strategy='MAX',
+                 conflict_resolving_strategy='MAX', 
                  return_layer=False, layer_name='events'):
         """Initialize a new EventTagger instance.
 
@@ -186,14 +272,15 @@ class EventTagger(KeywordTagger):
                                               ['peavalu', 'sümptom']], 
                                       columns=['term',    'type'])
         search_method: 'naive', 'ahocorasic'
-            Method to find events in text (default: 'naive' for python2 and 
-            'ahocorasick' for python3).
+            (default: 'naive' for python2 and 'ahocorasick' for python3)
+            Method to find events in text.
         case_sensitive: bool
             (default: ``True``)
             If ``True``, then the terms are searched from the text case sensitive.
             If ``False``, then the terms are searched from the text case insensitive.
         conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
-            Strategy to choose between overlaping events (default: 'MAX').
+            (default: 'MAX')
+            Strategy to choose between overlaping events.
             If 'ALL' returns all events.
             If 'MAX' returns all the events that are not contained by any other event.
             If 'MIN' returns all the events that don't contain any other event.
@@ -214,7 +301,7 @@ class EventTagger(KeywordTagger):
             raise ValueError("Unknown onflict_resolving_strategy '%s'." % conflict_resolving_strategy)
         if search_method == 'ahocorasick' and version_info.major < 3:
             raise ValueError(
-                    "search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
+                "search_method='ahocorasick' is not supported by Python %s. Try 'naive' instead." % version_info.major)
         self.event_vocabulary = self._read_event_vocabulary(event_vocabulary)
         self.search_method = search_method
         self.ahocorasick_automaton = None
