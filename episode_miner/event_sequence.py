@@ -1,3 +1,5 @@
+import json
+
 from estnltk.names import TEXT, START, END
 from episode_miner import TERM, WSTART, CSTART
 from estnltk import PrettyPrinter
@@ -217,3 +219,75 @@ class EventSequence(object):
             episode_examples = self._find_episode_examples_no_intermediate_events(episode, window_width)
         for example in episode_examples:
             yield example
+
+    def episodes_and_examples_to_file(self, episodes, 
+                                      window_width, 
+                                      allow_intermediate_events, 
+                                      number_of_examples='ALL',
+                                      episodes_file='episodes.txt',
+                                      episode_examples_file='episode_examples.txt'):
+        """Write list of episodes and episode examples to file.
+        
+        Creates files 'episodes.txt' and 'episode_examples.txt'.
+        Each line of 'episodes.txt' contains one episode from `episodes` 
+        serialized as a dict with keys 'sequence_of_events', 'abs_support', 
+        'rel_support', 'allow_intermediate_events'. 
+        Each line of 'episode_examples.txt' contains examples for the 
+        corresponding episode.
+        
+        Parameters
+        ----------
+        episodes: list of Episode
+            The episodes written to the file
+        window_width: int
+            Width of Winepi window.
+        allow_intermediate_events: bool
+            If True, all serial episodes are found.
+            If False, only serial episodes with no intermediate events are found.            
+        number_of_examples: int, 'ALL'
+            (default: 'ALL')
+            Maximum number of examples written to the file. If number_of_examples
+            is less than 1, 'episode_examples.txt' is not created. If 
+            number_of_examples=='ALL', all examples of episodes are written to 
+            the file.
+        episodes_file: str
+            (default: 'episodes.txt')
+            Name for file of episodes.
+        episode_examples_file: str
+            (default: 'episode_examples.txt')
+            Name for file of episode examples.
+        """
+        with open(episodes_file, mode='w') as f:
+            for episode in episodes:
+                json.dump({'sequence_of_events': episode, 
+                           'abs_support': episode.abs_support, 
+                           'rel_support': episode.rel_support, 
+                           'allow_intermediate_events': episode.allow_intermediate_events},
+                          fp=f,
+                          ensure_ascii=False)
+                f.write('\n')
+
+        if isinstance(number_of_examples, int):
+            if number_of_examples < 1:
+                return
+        elif number_of_examples != 'ALL':
+            return
+        
+        class EventEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, Event):
+                    return [obj.event_type, obj.event_time]
+                # Let the base class default method raise the TypeError
+                return json.JSONEncoder.default(self, obj)
+
+        
+        with open(episode_examples_file, mode='w') as f:
+            for episode in episodes:
+                k = 1
+                for example in self.find_episode_examples(episode, window_width, allow_intermediate_events):
+                    json.dump(example, fp=f, ensure_ascii=False, cls=EventEncoder)
+                    k += 1
+                    if number_of_examples != 'ALL' and k > number_of_examples:
+                        break
+                f.write('\n')
+        

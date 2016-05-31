@@ -1,5 +1,8 @@
+import os
 import unittest
 from episode_miner import Event, EventSequence, EventText, EventTagger, Episode
+from os.path import exists as file_exists
+from os import remove as file_remove
 
 class EventTest(unittest.TestCase):
     
@@ -173,3 +176,36 @@ class EventSequenceTest(unittest.TestCase):
                     [Event('b', 5)]
                     )
         self.assertTupleEqual(result, expected)
+
+
+    def test_episodes_and_examples_to_file(self):
+        sequence_of_events = [
+                              Event('a', 1),
+                              Event('a', 2),
+                              Event('b', 2),
+                              Event('b', 3), 
+                              Event('a', 4),
+                              Event('c', 5),
+                              Event('b', 6), 
+                              Event('c', 6),
+                              Event('a', 7), 
+                              Event('c', 8)
+                              ]
+        event_sequence = EventSequence(sequence_of_events=sequence_of_events, start=1, end=9)
+        e1 = Episode(('a', 'a'))
+        e2 = Episode(('a', 'b'))
+
+        event_sequence.episodes_and_examples_to_file((e1, e2),
+                                                     window_width=3, 
+                                                     allow_intermediate_events=True,
+                                                     number_of_examples=2)
+        with open('episode_examples.txt') as f:
+            result = f.read()
+        expected='''[["a", 1], ["a", 2]][["a", 2], ["a", 4]]\n[["a", 1], ["b", 2]][["a", 1], ["b", 3]]\n'''
+        # TODO: test 'episodes.txt'
+        self.assertEqual(expected, result)
+        self.assertTrue(file_exists('episodes.txt'))
+        self.assertTrue(file_exists('episode_examples.txt'))
+        file_remove('episodes.txt')
+        file_remove('episode_examples.txt')
+
