@@ -1,0 +1,387 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>event_sequence &mdash; episode-miner 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="episode-miner 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">episode-miner 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for event_sequence</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">estnltk.names</span> <span class="kn">import</span> <span class="n">TEXT</span><span class="p">,</span> <span class="n">START</span><span class="p">,</span> <span class="n">END</span>
+<span class="kn">from</span> <span class="nn">episode_miner</span> <span class="kn">import</span> <span class="n">TERM</span><span class="p">,</span> <span class="n">WSTART</span><span class="p">,</span> <span class="n">CSTART</span>
+<span class="kn">from</span> <span class="nn">estnltk</span> <span class="kn">import</span> <span class="n">PrettyPrinter</span>
+<span class="kn">from</span> <span class="nn">estnltk.prettyprinter</span> <span class="kn">import</span> <span class="n">HEADER</span><span class="p">,</span> <span class="n">MIDDLE</span><span class="p">,</span> <span class="n">FOOTER</span>
+<span class="kn">from</span> <span class="nn">cached_property</span> <span class="kn">import</span> <span class="n">cached_property</span>
+
+<div class="viewcode-block" id="Event"><a class="viewcode-back" href="../event_sequence.html#event_sequence.Event">[docs]</a><span class="k">class</span> <span class="nc">Event</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An event is a pair of event type and event time.&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="Event.__init__"><a class="viewcode-back" href="../event_sequence.html#event_sequence.Event.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">,</span> <span class="n">event_time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a new Event.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        event_type: hashable</span>
+<span class="sd">            Type of event</span>
+<span class="sd">        event_time: int</span>
+<span class="sd">            Time of event</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_type</span> <span class="o">=</span> <span class="n">event_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_time</span> <span class="o">=</span> <span class="n">event_time</span></div>
+    
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event_type</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;, &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event_time</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__str__</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">Event</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_type</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">event_type</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_time</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span>
+
+    <span class="k">def</span> <span class="nf">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">episode</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&lt;</span> <span class="n">episode</span><span class="o">.</span><span class="n">event_time</span>
+
+<div class="viewcode-block" id="Event.shift"><a class="viewcode-back" href="../event_sequence.html#event_sequence.Event.shift">[docs]</a>    <span class="k">def</span> <span class="nf">shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Change time of event.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        shift: int</span>
+<span class="sd">            Shifts the time of event by *shift*.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_time</span> <span class="o">+=</span> <span class="n">shift</span>
+        <span class="k">return</span> <span class="bp">self</span></div></div>
+
+
+<div class="viewcode-block" id="EventSequence"><a class="viewcode-back" href="../event_sequence.html#event_sequence.EventSequence">[docs]</a><span class="k">class</span> <span class="nc">EventSequence</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An event sequence is a triple of sequence of events, start and end.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="EventSequence.__init__"><a class="viewcode-back" href="../event_sequence.html#event_sequence.EventSequence.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a new EventSequence</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sequence_of_events: list of Event</span>
+<span class="sd">            Sequence of events</span>
+<span class="sd">        start: int</span>
+<span class="sd">            Start of sequence of events.</span>
+<span class="sd">        end: int</span>
+<span class="sd">            End of sequence of events. If start &gt; end, **ValueError** is raised.</span>
+<span class="sd">        event_text: EventText</span>
+<span class="sd">            If given, then the parameters *classsificator* and </span>
+<span class="sd">            *time_scale* must also be given.</span>
+<span class="sd">        classificator: str</span>
+<span class="sd">            Keyword of *event_text*&#39;s &#39;events&#39; layer that points to event type.</span>
+<span class="sd">        time_scale: &#39;start&#39;, &#39;end&#39;, &#39;cstart&#39;, &#39;wstart&#39; </span>
+<span class="sd">            Strategy to determine time of event.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;sequence_of_events&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;start&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;end&#39;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_text</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;event_text&#39;</span><span class="p">)</span>
+        <span class="n">time_scale</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;time_scale&#39;</span><span class="p">)</span>
+        <span class="n">classificator</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;classificator&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_text</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">classificator</span> <span class="o">!=</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">time_scale</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_extract_event_sequence_from_event_text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event_text</span><span class="p">,</span> <span class="n">time_scale</span><span class="p">,</span> <span class="n">classificator</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;event_text without classificator or time_scale parameter.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span> <span class="o">=</span> <span class="p">[</span><span class="n">event</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span> 
+                                   <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;=</span> <span class="n">event</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;(&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, start: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;, end: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__str__</span><span class="p">()</span>
+    
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span> <span class="nf">_rules</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="s1">&#39;magenta&#39;</span><span class="p">,</span> <span class="s1">&#39;yellow&#39;</span><span class="p">,</span> 
+          <span class="s1">&#39;pink&#39;</span><span class="p">,</span><span class="s1">&#39;lime&#39;</span><span class="p">,</span> <span class="s1">&#39;peru&#39;</span><span class="p">,</span> <span class="s1">&#39;orange&#39;</span><span class="p">,</span> <span class="s1">&#39;lightgray&#39;</span><span class="p">,</span> <span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+        <span class="n">rules</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">event_type</span> <span class="ow">in</span> <span class="p">{</span><span class="n">event</span><span class="o">.</span><span class="n">event_type</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span><span class="p">}:</span>
+            <span class="n">rules</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">event_type</span><span class="p">,</span> <span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rules</span>
+
+    
+    <span class="k">def</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">sequence_of_events_generator</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;sequence_of_events_generator&#39;</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span><span class="p">])</span>
+        <span class="n">html</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">sequence_of_events</span> <span class="ow">in</span> <span class="n">sequence_of_events_generator</span><span class="p">:</span>
+            <span class="k">def</span> <span class="nf">event_tags</span><span class="p">(</span><span class="n">_</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">({</span><span class="n">TEXT</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">event_type</span><span class="p">,</span> <span class="n">START</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">END</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="p">}</span> 
+                        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">sequence_of_events</span><span class="p">)</span>
+            <span class="n">pp</span> <span class="o">=</span> <span class="n">PrettyPrinter</span><span class="p">(</span><span class="n">background</span><span class="o">=</span><span class="n">event_tags</span><span class="p">,</span> <span class="n">background_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_rules</span><span class="p">)</span>
+            <span class="n">html</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\t\t</span><span class="s1">&lt;p&gt;&#39;</span> <span class="o">+</span> <span class="n">pp</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">event_text</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;&lt;/p&gt;</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+        <span class="n">html</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">HEADER</span><span class="p">,</span> <span class="n">pp</span><span class="o">.</span><span class="n">css</span><span class="p">,</span> <span class="n">MIDDLE</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">FOOTER</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">html</span>
+        
+    <span class="k">def</span> <span class="nf">_extract_event_sequence_from_event_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_text</span><span class="p">,</span> <span class="n">time_scale</span><span class="o">=</span><span class="n">START</span><span class="p">,</span> <span class="n">classificator</span><span class="o">=</span><span class="n">TERM</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="n">time_scale</span> <span class="ow">in</span> <span class="p">[</span><span class="n">START</span><span class="p">,</span> <span class="n">END</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">time_scale</span> <span class="o">==</span> <span class="n">CSTART</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">events</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">event_text</span><span class="o">.</span><span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">CSTART</span><span class="p">]</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">-</span> <span class="n">event_text</span><span class="o">.</span><span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">END</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">time_scale</span> <span class="o">==</span> <span class="n">WSTART</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">events</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">end_of_last_event</span> <span class="o">=</span> <span class="n">event_text</span><span class="o">.</span><span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">END</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">words</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">end_of_last_event</span> <span class="o">&gt;=</span> <span class="n">event_text</span><span class="o">.</span><span class="n">words</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">END</span><span class="p">]:</span>
+                            <span class="k">break</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">words</span><span class="p">)</span> <span class="o">-</span> <span class="n">i</span> <span class="o">+</span> <span class="n">event_text</span><span class="o">.</span><span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">WSTART</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_text</span><span class="o">.</span><span class="n">words</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span> 
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;time_scale must be either </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2"> or </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span><span class="n">START</span> <span class="o">%</span><span class="n">END</span> <span class="o">%</span><span class="n">CSTART</span> <span class="o">%</span><span class="n">WSTART</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;start &gt; end&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">textevent</span> <span class="ow">in</span> <span class="n">event_text</span><span class="o">.</span><span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;=</span> <span class="n">textevent</span><span class="p">[</span><span class="n">time_scale</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">:</span>
+                <span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span><span class="n">textevent</span><span class="p">[</span><span class="n">classificator</span><span class="p">],</span> <span class="n">textevent</span><span class="p">[</span><span class="n">time_scale</span><span class="p">])</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">event_text</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="n">textevent</span><span class="p">[</span><span class="n">START</span><span class="p">]</span>
+                <span class="n">event</span><span class="o">.</span><span class="n">end</span> <span class="o">=</span> <span class="n">textevent</span><span class="p">[</span><span class="n">END</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_find_episode_examples_intermediate_events_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">episode</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">depth</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">episode</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span>        
+        <span class="k">if</span> <span class="n">window_width</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span> <span class="k">return</span>
+        <span class="n">sequence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span>
+        <span class="k">if</span> <span class="n">depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="p">[]</span>
+            <span class="k">return</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">sequence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">event_type</span> <span class="o">!=</span> <span class="n">episode</span><span class="p">[</span><span class="o">-</span><span class="n">depth</span><span class="p">]:</span>
+                <span class="k">continue</span>
+            <span class="n">interval</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">episode</span><span class="p">):</span>
+                <span class="n">interval</span> <span class="o">=</span> <span class="n">sequence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span> <span class="o">-</span> <span class="n">sequence</span><span class="p">[</span><span class="n">start</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span>
+                <span class="k">if</span> <span class="n">interval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">cc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_episode_examples_intermediate_events_allowed</span><span class="p">(</span><span class="n">episode</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">window_width</span><span class="o">-</span><span class="n">interval</span><span class="p">,</span> <span class="n">depth</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="p">[</span><span class="n">sequence</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">+</span> <span class="n">cc</span>
+
+    <span class="k">def</span> <span class="nf">_find_episode_examples_no_intermediate_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">episode</span><span class="p">,</span> <span class="n">window_width</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">episode</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span>        
+        <span class="n">sequence</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sequence_of_events</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">episode</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">sequence</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">event_type</span> <span class="o">==</span> <span class="n">episode</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">example</span> <span class="o">=</span> <span class="p">[</span><span class="n">sequence</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">episode</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> 
+                    <span class="k">yield</span> <span class="n">example</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="n">sequence</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span> <span class="o">==</span> <span class="n">example</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">sequence</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span> <span class="o">-</span> <span class="n">example</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&gt;=</span> <span class="n">window_width</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="n">sequence</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">event_type</span> <span class="o">==</span> <span class="n">episode</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">example</span><span class="p">)]:</span>
+                        <span class="n">example</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sequence</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                    <span class="k">elif</span> <span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span> <span class="ow">or</span> <span class="n">sequence</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span> <span class="o">&lt;</span> <span class="n">sequence</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">event_time</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">example</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">episode</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">example</span>
+                        <span class="k">break</span>
+
+<div class="viewcode-block" id="EventSequence.find_episode_examples"><a class="viewcode-back" href="../event_sequence.html#event_sequence.EventSequence.find_episode_examples">[docs]</a>    <span class="k">def</span> <span class="nf">find_episode_examples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">episode</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="n">allow_intermediate_events</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find episode examples</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        episode: Episode</span>
+<span class="sd">            Winepi episode.</span>
+<span class="sd">        window_width: int</span>
+<span class="sd">            Width of Winepi window.</span>
+<span class="sd">        allow_intermediate_events: bool (default: episode.allow_intermediate_events)</span>
+<span class="sd">            If True, all serial episodes are found.</span>
+
+<span class="sd">            If False, only serial episodes with no intermediate events are found.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        generator</span>
+<span class="sd">            Generator for examples. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">allow_intermediate_events</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span> 
+            <span class="n">allow_intermediate_events</span> <span class="o">=</span> <span class="n">episode</span><span class="o">.</span><span class="n">allow_intermediate_events</span>
+        <span class="k">if</span> <span class="n">allow_intermediate_events</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span> 
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;no positional argument &#39;allow_intermediate_events&#39; and no attribute &#39;episode.allow_intermediate_events&#39;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">allow_intermediate_events</span><span class="p">:</span>
+            <span class="n">episode_examples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_episode_examples_intermediate_events_allowed</span><span class="p">(</span><span class="n">episode</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">episode</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">episode_examples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_episode_examples_no_intermediate_events</span><span class="p">(</span><span class="n">episode</span><span class="p">,</span> <span class="n">window_width</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="n">episode_examples</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">example</span></div>
+
+<div class="viewcode-block" id="EventSequence.episodes_and_examples_to_file"><a class="viewcode-back" href="../event_sequence.html#event_sequence.EventSequence.episodes_and_examples_to_file">[docs]</a>    <span class="k">def</span> <span class="nf">episodes_and_examples_to_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">episodes</span><span class="p">,</span> 
+                                      <span class="n">window_width</span><span class="p">,</span> 
+                                      <span class="n">allow_intermediate_events</span><span class="p">,</span> 
+                                      <span class="n">number_of_examples</span><span class="o">=</span><span class="s1">&#39;ALL&#39;</span><span class="p">,</span>
+                                      <span class="n">episodes_file</span><span class="o">=</span><span class="s1">&#39;episodes.txt&#39;</span><span class="p">,</span>
+                                      <span class="n">episode_examples_file</span><span class="o">=</span><span class="s1">&#39;episode_examples.txt&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write list of episodes and episode examples to file.</span>
+<span class="sd">        </span>
+<span class="sd">        Creates files &#39;episodes.txt&#39; and &#39;episode_examples.txt&#39;.</span>
+<span class="sd">        </span>
+<span class="sd">        Each line of &#39;episodes.txt&#39; contains one episode from `episodes` </span>
+<span class="sd">        serialized by json as a dict with keys &#39;sequence_of_events&#39;, </span>
+<span class="sd">        &#39;abs_support&#39;, &#39;rel_support&#39;, &#39;allow_intermediate_events&#39;. </span>
+<span class="sd">        </span>
+<span class="sd">        Each line of &#39;episode_examples.txt&#39; contains list of examples for the </span>
+<span class="sd">        corresponding episode serialised by json.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        episodes: list of Episode</span>
+<span class="sd">            The episodes written to the file</span>
+<span class="sd">        window_width: int</span>
+<span class="sd">            Width of Winepi window.</span>
+<span class="sd">        allow_intermediate_events: bool</span>
+<span class="sd">            If True, all serial episodes are found.</span>
+
+<span class="sd">            If False, only serial episodes with no intermediate events are found.            </span>
+<span class="sd">        number_of_examples: int, &#39;ALL&#39; (default: &#39;ALL&#39;)</span>
+<span class="sd">            Maximum number of examples written to the file. </span>
+
+<span class="sd">            If number_of_examples is less than 1, &#39;episode_examples.txt&#39; is not </span>
+<span class="sd">            created. </span>
+<span class="sd">            </span>
+<span class="sd">            If number_of_examples==&#39;ALL&#39;, all examples of episodes are written </span>
+<span class="sd">            to the file.</span>
+<span class="sd">        episodes_file: str (default: &#39;episodes.txt&#39;)</span>
+<span class="sd">            Name for the file of episodes.</span>
+<span class="sd">        episode_examples_file: str (default: &#39;episode_examples.txt&#39;)</span>
+<span class="sd">            Name for the file of episode examples.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">episodes_file</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">episode</span> <span class="ow">in</span> <span class="n">episodes</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">({</span><span class="s1">&#39;sequence_of_events&#39;</span><span class="p">:</span> <span class="n">episode</span><span class="p">,</span> 
+                           <span class="s1">&#39;abs_support&#39;</span><span class="p">:</span> <span class="n">episode</span><span class="o">.</span><span class="n">abs_support</span><span class="p">,</span> 
+                           <span class="s1">&#39;rel_support&#39;</span><span class="p">:</span> <span class="n">episode</span><span class="o">.</span><span class="n">rel_support</span><span class="p">,</span> 
+                           <span class="s1">&#39;allow_intermediate_events&#39;</span><span class="p">:</span> <span class="n">episode</span><span class="o">.</span><span class="n">allow_intermediate_events</span><span class="p">},</span>
+                          <span class="n">fp</span><span class="o">=</span><span class="n">f</span><span class="p">,</span>
+                          <span class="n">ensure_ascii</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">number_of_examples</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">number_of_examples</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span>
+        <span class="k">elif</span> <span class="n">number_of_examples</span> <span class="o">!=</span> <span class="s1">&#39;ALL&#39;</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">class</span> <span class="nc">EventEncoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="p">):</span>
+            <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Event</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">event_type</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">event_time</span><span class="p">]</span>
+                <span class="c1"># Let the base class default method raise the TypeError</span>
+                <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">episode_examples_file</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">episode</span> <span class="ow">in</span> <span class="n">episodes</span><span class="p">:</span>
+                <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">examples</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">example</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_episode_examples</span><span class="p">(</span><span class="n">episode</span><span class="p">,</span> <span class="n">window_width</span><span class="p">,</span> 
+                                                          <span class="n">allow_intermediate_events</span><span class="p">):</span>
+                    <span class="n">examples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+                    <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">number_of_examples</span> <span class="o">!=</span> <span class="s1">&#39;ALL&#39;</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="n">number_of_examples</span><span class="p">:</span>
+                        <span class="k">break</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">examples</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">cls</span><span class="o">=</span><span class="n">EventEncoder</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">episode-miner 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, University of Tartu.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.2.
+    </div>
+  </body>
+</html>

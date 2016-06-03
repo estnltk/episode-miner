@@ -1,0 +1,338 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>KeywordTagger, RegexTagger, EventTagger &mdash; episode-miner 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="episode-miner 1.0 documentation" href="index.html" />
+    <link rel="next" title="EventText" href="event_text.html" />
+    <link rel="prev" title="Winepi" href="winepi.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="event_text.html" title="EventText"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="winepi.html" title="Winepi"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">episode-miner 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-event_tagger">
+<span id="keywordtagger-regextagger-eventtagger"></span><h1><code class="xref py py-mod docutils literal"><span class="pre">KeywordTagger,</span> <span class="pre">RegexTagger,</span> <span class="pre">EventTagger</span></code><a class="headerlink" href="#module-event_tagger" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="event_tagger.EventTagger">
+<em class="property">class </em><code class="descclassname">event_tagger.</code><code class="descname">EventTagger</code><span class="sig-paren">(</span><em>event_vocabulary</em>, <em>search_method='ahocorasick'</em>, <em>case_sensitive=True</em>, <em>conflict_resolving_strategy='MAX'</em>, <em>return_layer=False</em>, <em>layer_name='events'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#EventTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.EventTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class that finds a list of events from Text object based on 
+user-provided vocabulary. The events are tagged by several metrics (start, 
+end, cstart, wstart, wstart_raw, wend_raw) and user-provided classificators.</p>
+<p>The word start <code class="docutils literal"><span class="pre">wstart</span></code> and char start <code class="docutils literal"><span class="pre">cstart</span></code> of an event are 
+calculated as if all the events consist of one character.  <code class="docutils literal"><span class="pre">cstart</span></code> and 
+<code class="docutils literal"><span class="pre">wstart</span></code> are calculated only if there is no overlapping events.</p>
+<p><code class="docutils literal"><span class="pre">wstart_raw</span></code>, <code class="docutils literal"><span class="pre">wend_raw</span></code> show at which word the event starts and ends
+considering the real length of events.</p>
+<dl class="method">
+<dt id="event_tagger.EventTagger.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>event_vocabulary</em>, <em>search_method='ahocorasick'</em>, <em>case_sensitive=True</em>, <em>conflict_resolving_strategy='MAX'</em>, <em>return_layer=False</em>, <em>layer_name='events'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#EventTagger.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.EventTagger.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new EventTagger instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>event_vocabulary: list of dict, str, pandas.DataFrame</strong></p>
+<blockquote>
+<div><p>Vocabulary of events. There must be one key (column) called &#8216;term&#8217; 
+in <code class="docutils literal"><span class="pre">event_vocabulary</span></code>. That refers to the strings searched from 
+the text. Other keys (&#8216;type&#8217; in the following examples) are optional. 
+No key may have name &#8216;start&#8217;, &#8216;end&#8217;, &#8216;cstart&#8217;, &#8216;wstart&#8217;, 
+&#8216;wstart_raw&#8217; or &#8216;wend_raw&#8217;.</p>
+<p>If <code class="docutils literal"><span class="pre">list</span> <span class="pre">of</span> <span class="pre">dict</span></code>, then every dict in the list is a vocabulary entry.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">event_vocabulary</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;term&#39;</span><span class="p">:</span> <span class="s1">&#39;Harv&#39;</span><span class="p">,</span>    <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;sagedus&#39;</span><span class="p">},</span> 
+                    <span class="p">{</span><span class="s1">&#39;term&#39;</span><span class="p">:</span> <span class="s1">&#39;peavalu&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;sümptom&#39;</span><span class="p">}]</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal"><span class="pre">str</span></code>, then event vocabulary is read from csv file named
+<code class="docutils literal"><span class="pre">event_vocabulary</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">term</span><span class="p">,</span><span class="nb">type</span>
+<span class="n">Harv</span><span class="p">,</span><span class="n">sagedus</span>
+<span class="n">peavalu</span><span class="p">,</span><span class="n">sümptom</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal"><span class="pre">pandas.DataFrame</span></code>, then the vocabulary of events is created 
+from the <code class="docutils literal"><span class="pre">pandas.DataFrame</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">event_vocabulary</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">([[</span><span class="s1">&#39;Harv&#39;</span><span class="p">,</span>    <span class="s1">&#39;sagedus&#39;</span><span class="p">],</span> 
+                              <span class="p">[</span><span class="s1">&#39;peavalu&#39;</span><span class="p">,</span> <span class="s1">&#39;sümptom&#39;</span><span class="p">]],</span> 
+                      <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;term&#39;</span><span class="p">,</span>    <span class="s1">&#39;type&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>search_method: &#8216;naive&#8217;, &#8216;ahocorasic&#8217;</strong></p>
+<blockquote>
+<div><p>(default: &#8216;naive&#8217; for python2 and &#8216;ahocorasick&#8217; for python3)</p>
+<p>Method to find events in text.</p>
+</div></blockquote>
+<p><strong>case_sensitive: bool (default: True)</strong></p>
+<blockquote>
+<div><p>If <code class="docutils literal"><span class="pre">True</span></code>, then the terms are searched from the text case sensitive.</p>
+<p>If <code class="docutils literal"><span class="pre">False</span></code>, then the terms are searched from the text case insensitive.</p>
+</div></blockquote>
+<p><strong>conflict_resolving_strategy: &#8216;ALL&#8217;, &#8216;MAX&#8217;, &#8216;MIN&#8217; (default: &#8216;MAX&#8217;)</strong></p>
+<blockquote>
+<div><p>Strategy to choose between overlaping events.</p>
+<p>If &#8216;ALL&#8217; returns all events.</p>
+<p>If &#8216;MAX&#8217; returns all the events that are not contained by any other event.</p>
+<p>If &#8216;MIN&#8217; returns all the events that don&#8217;t contain any other event.</p>
+</div></blockquote>
+<p><strong>return_layer: bool</strong></p>
+<blockquote>
+<div><p>If <code class="docutils literal"><span class="pre">True</span></code>, EventTagger.tag(text) returns a layer. 
+If <code class="docutils literal"><span class="pre">False</span></code>, EventTagger.tag(text) annotates the text object with the layer instead.</p>
+</div></blockquote>
+<p><strong>layer_name: str (default: &#8216;events&#8217;)</strong></p>
+<blockquote class="last">
+<div><p>If <code class="docutils literal"><span class="pre">return_layer</span></code> is <code class="docutils literal"><span class="pre">False</span></code>, EventTagger.tag(text) annotates 
+to this layer of the text object.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="event_tagger.EventTagger.tag">
+<code class="descname">tag</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#EventTagger.tag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.EventTagger.tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves list of events in text.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>text: Text</strong></p>
+<blockquote>
+<div><p>The text to search for events.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of events sorted by start, end</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="event_tagger.KeywordTagger">
+<em class="property">class </em><code class="descclassname">event_tagger.</code><code class="descname">KeywordTagger</code><span class="sig-paren">(</span><em>keyword_sequence=None</em>, <em>search_method='ahocorasick'</em>, <em>conflict_resolving_strategy='MAX'</em>, <em>return_layer=False</em>, <em>layer_name='keywords'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#KeywordTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.KeywordTagger" title="Permalink to this definition">¶</a></dt>
+<dd><p>A class that finds a list of keywords from Text object based on user-provided vocabulary.</p>
+<dl class="method">
+<dt id="event_tagger.KeywordTagger.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>keyword_sequence=None</em>, <em>search_method='ahocorasick'</em>, <em>conflict_resolving_strategy='MAX'</em>, <em>return_layer=False</em>, <em>layer_name='keywords'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#KeywordTagger.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.KeywordTagger.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new KeywordTagger instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>keyword_sequence: list-like or dict-like</strong></p>
+<blockquote>
+<div><p>sequence of keywords to annotate</p>
+</div></blockquote>
+<p><strong>search_method: &#8216;naive&#8217;, &#8216;ahocorasick&#8217;</strong></p>
+<blockquote>
+<div><p>Method to find events in text (default: &#8216;naive&#8217; for python2 and &#8216;ahocorasick&#8217; for python3).</p>
+</div></blockquote>
+<p><strong>conflict_resolving_strategy: &#8216;ALL&#8217;, &#8216;MAX&#8217;, &#8216;MIN&#8217;</strong></p>
+<blockquote>
+<div><p>Strategy to choose between overlapping events (default: &#8216;MAX&#8217;).</p>
+</div></blockquote>
+<p><strong>return_layer: bool</strong></p>
+<blockquote>
+<div><p>if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.</p>
+</div></blockquote>
+<p><strong>layer_name: str</strong></p>
+<blockquote class="last">
+<div><p>if return_layer is False, KeywordTagger.tag(text) annotates to this layer of the text object. Default &#8216;keywords&#8217;</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="event_tagger.KeywordTagger.tag">
+<code class="descname">tag</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#KeywordTagger.tag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.KeywordTagger.tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves list of keywords in text.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>text: Text</strong></p>
+<blockquote>
+<div><p>The text to search for events.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of vents sorted by start, end</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="event_tagger.RegexTagger">
+<em class="property">class </em><code class="descclassname">event_tagger.</code><code class="descname">RegexTagger</code><span class="sig-paren">(</span><em>regex_sequence=None</em>, <em>conflict_resolving_strategy='MAX'</em>, <em>return_layer=False</em>, <em>layer_name='regexes'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#RegexTagger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.RegexTagger" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="event_tagger.RegexTagger.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>regex_sequence=None</em>, <em>conflict_resolving_strategy='MAX'</em>, <em>return_layer=False</em>, <em>layer_name='regexes'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#RegexTagger.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.RegexTagger.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new RegexTagger instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>regex_sequence: list-like or dict-like</strong></p>
+<blockquote>
+<div><p>sequence of regexes to annotate</p>
+</div></blockquote>
+<p><strong>conflict_resolving_strategy: &#8216;ALL&#8217;, &#8216;MAX&#8217;, &#8216;MIN&#8217;</strong></p>
+<blockquote>
+<div><p>Strategy to choose between overlapping events (default: &#8216;MAX&#8217;).</p>
+</div></blockquote>
+<p><strong>return_layer: bool</strong></p>
+<blockquote>
+<div><p>if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.</p>
+</div></blockquote>
+<p><strong>layer_name: str</strong></p>
+<blockquote class="last">
+<div><p>if return_layer is False, KeywordTagger.tag(text) annotates to this layer of the text object. Default &#8216;keywords&#8217;</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="event_tagger.RegexTagger.tag">
+<code class="descname">tag</code><span class="sig-paren">(</span><em>text</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_tagger.html#RegexTagger.tag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_tagger.RegexTagger.tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves list of regex_matches in text.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>text: Text</strong></p>
+<blockquote>
+<div><p>The estnltk text object to search for events.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list of matches</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="winepi.html"
+                        title="previous chapter"><code class="docutils literal"><span class="pre">Winepi</span></code></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="event_text.html"
+                        title="next chapter"><code class="docutils literal"><span class="pre">EventText</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/event_tagger.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="event_text.html" title="EventText"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="winepi.html" title="Winepi"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">episode-miner 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, University of Tartu.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.2.
+    </div>
+  </body>
+</html>

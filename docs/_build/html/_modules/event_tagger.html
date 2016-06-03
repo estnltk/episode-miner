@@ -1,0 +1,521 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>event_tagger &mdash; episode-miner 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="episode-miner 1.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">episode-miner 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for event_tagger</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">ahocorasick</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">version_info</span>
+
+<span class="kn">import</span> <span class="nn">regex</span> <span class="kn">as</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">unicodecsv</span> <span class="kn">as</span> <span class="nn">csv</span>
+<span class="kn">from</span> <span class="nn">estnltk.names</span> <span class="kn">import</span> <span class="n">START</span><span class="p">,</span> <span class="n">END</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+
+<span class="n">TERM</span> <span class="o">=</span> <span class="s1">&#39;term&#39;</span>
+<span class="n">WSTART_RAW</span> <span class="o">=</span> <span class="s1">&#39;wstart_raw&#39;</span>
+<span class="n">WEND_RAW</span> <span class="o">=</span> <span class="s1">&#39;wend_raw&#39;</span>
+<span class="n">WSTART</span> <span class="o">=</span> <span class="s1">&#39;wstart&#39;</span>
+<span class="n">CSTART</span> <span class="o">=</span> <span class="s1">&#39;cstart&#39;</span>
+
+<span class="n">DEFAULT_METHOD</span> <span class="o">=</span> <span class="s1">&#39;ahocorasick&#39;</span> <span class="k">if</span> <span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">3</span> <span class="k">else</span> <span class="s1">&#39;naive&#39;</span>
+
+
+<div class="viewcode-block" id="KeywordTagger"><a class="viewcode-back" href="../event_tagger.html#event_tagger.KeywordTagger">[docs]</a><span class="k">class</span> <span class="nc">KeywordTagger</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A class that finds a list of keywords from Text object based on user-provided vocabulary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="KeywordTagger.__init__"><a class="viewcode-back" href="../event_tagger.html#event_tagger.KeywordTagger.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_sequence</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">search_method</span><span class="o">=</span><span class="n">DEFAULT_METHOD</span><span class="p">,</span> <span class="n">conflict_resolving_strategy</span><span class="o">=</span><span class="s1">&#39;MAX&#39;</span><span class="p">,</span>
+                 <span class="n">return_layer</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">layer_name</span><span class="o">=</span><span class="s1">&#39;keywords&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a new KeywordTagger instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        keyword_sequence: list-like or dict-like</span>
+<span class="sd">            sequence of keywords to annotate</span>
+<span class="sd">        search_method: &#39;naive&#39;, &#39;ahocorasick&#39;</span>
+<span class="sd">            Method to find events in text (default: &#39;naive&#39; for python2 and &#39;ahocorasick&#39; for python3).</span>
+<span class="sd">        conflict_resolving_strategy: &#39;ALL&#39;, &#39;MAX&#39;, &#39;MIN&#39;</span>
+<span class="sd">            Strategy to choose between overlapping events (default: &#39;MAX&#39;).</span>
+<span class="sd">        return_layer: bool</span>
+<span class="sd">            if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.</span>
+<span class="sd">        layer_name: str</span>
+<span class="sd">            if return_layer is False, KeywordTagger.tag(text) annotates to this layer of the text object. Default &#39;keywords&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">keyword_sequence</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can&#39;t really do something without keywords&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">keyword_sequence</span><span class="p">,</span> <span class="s1">&#39;get&#39;</span><span class="p">):</span>
+            <span class="c1"># I think we got a dict-like</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">keyword_sequence</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_sequence</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">keyword_sequence</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">keyword_sequence</span> <span class="o">=</span> <span class="n">keyword_sequence</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_name</span> <span class="o">=</span> <span class="n">layer_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">return_layer</span> <span class="o">=</span> <span class="n">return_layer</span>
+        <span class="k">if</span> <span class="n">search_method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;naive&#39;</span><span class="p">,</span> <span class="s1">&#39;ahocorasick&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown search_method &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span> <span class="o">%</span> <span class="n">search_method</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">conflict_resolving_strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ALL&#39;</span><span class="p">,</span> <span class="s1">&#39;MIN&#39;</span><span class="p">,</span> <span class="s1">&#39;MAX&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown conflict_resolving_strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span> <span class="o">%</span> <span class="n">conflict_resolving_strategy</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">search_method</span> <span class="o">==</span> <span class="s1">&#39;ahocorasick&#39;</span> <span class="ow">and</span> <span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;search_method=&#39;ahocorasick&#39; is not supported by Python </span><span class="si">%s</span><span class="s2">. Try &#39;naive&#39; instead.&quot;</span> <span class="o">%</span> <span class="n">version_info</span><span class="o">.</span><span class="n">major</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">search_method</span> <span class="o">=</span> <span class="n">search_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conflict_resolving_strategy</span> <span class="o">=</span> <span class="n">conflict_resolving_strategy</span></div>
+
+    <span class="k">def</span> <span class="nf">_find_keywords_naive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keyword_sequence</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+            <span class="k">while</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="n">START</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="n">END</span><span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">entry</span><span class="p">)})</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">events</span>
+
+    <span class="k">def</span> <span class="nf">_find_keywords_ahocorasick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span> <span class="o">=</span> <span class="n">ahocorasick</span><span class="o">.</span><span class="n">Automaton</span><span class="p">(</span><span class="n">ahocorasick</span><span class="o">.</span><span class="n">STORE_LENGTH</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keyword_sequence</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span><span class="o">.</span><span class="n">add_word</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span><span class="o">.</span><span class="n">make_automaton</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">end</span><span class="p">,</span> <span class="n">length</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span><span class="o">.</span><span class="n">iter</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">START</span><span class="p">:</span> <span class="n">end</span> <span class="o">-</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">END</span><span class="p">:</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">events</span>
+
+    <span class="k">def</span> <span class="nf">_resolve_conflicts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="n">event</span><span class="p">[</span><span class="n">END</span><span class="p">])</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="n">event</span><span class="p">[</span><span class="n">START</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">conflict_resolving_strategy</span> <span class="o">==</span> <span class="s1">&#39;ALL&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">events</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">conflict_resolving_strategy</span> <span class="o">==</span> <span class="s1">&#39;MAX&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">events</span>
+            <span class="n">bookmark</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">bookmark</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">START</span><span class="p">]</span> <span class="o">==</span> <span class="n">events</span><span class="p">[</span><span class="n">bookmark</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="n">START</span><span class="p">]:</span>
+                <span class="n">bookmark</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">new_events</span> <span class="o">=</span> <span class="p">[</span><span class="n">events</span><span class="p">[</span><span class="n">bookmark</span><span class="p">]]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bookmark</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">END</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">new_events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">END</span><span class="p">]</span> <span class="ow">and</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">START</span><span class="p">]</span> <span class="o">!=</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="n">START</span><span class="p">]:</span>
+                    <span class="n">new_events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">END</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">new_events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">END</span><span class="p">]:</span>
+                <span class="n">new_events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">new_events</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">conflict_resolving_strategy</span> <span class="o">==</span> <span class="s1">&#39;MIN&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">events</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">START</span><span class="p">]</span> <span class="o">==</span> <span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">][</span><span class="n">START</span><span class="p">]:</span>
+                <span class="k">del</span> <span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">START</span><span class="p">]</span> <span class="o">==</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">][</span><span class="n">START</span><span class="p">]</span> <span class="ow">or</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">END</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="n">END</span><span class="p">]:</span>
+                    <span class="k">del</span> <span class="n">events</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">events</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">END</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">events</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">END</span><span class="p">]:</span>
+                <span class="k">del</span> <span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">events</span>
+
+<div class="viewcode-block" id="KeywordTagger.tag"><a class="viewcode-back" href="../event_tagger.html#event_tagger.KeywordTagger.tag">[docs]</a>    <span class="k">def</span> <span class="nf">tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves list of keywords in text.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        text: Text</span>
+<span class="sd">            The text to search for events.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of vents sorted by start, end</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_method</span> <span class="o">==</span> <span class="s1">&#39;ahocorasick&#39;</span><span class="p">:</span>
+            <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_keywords_ahocorasick</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_method</span> <span class="o">==</span> <span class="s1">&#39;naive&#39;</span><span class="p">:</span>
+            <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_keywords_naive</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_conflicts</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+                <span class="n">item</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">[</span>
+                    <span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]:</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]]</span>
+                <span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_layer</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">events</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">text</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">events</span></div></div>
+
+
+<div class="viewcode-block" id="RegexTagger"><a class="viewcode-back" href="../event_tagger.html#event_tagger.RegexTagger">[docs]</a><span class="k">class</span> <span class="nc">RegexTagger</span><span class="p">(</span><span class="n">KeywordTagger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="RegexTagger.__init__"><a class="viewcode-back" href="../event_tagger.html#event_tagger.RegexTagger.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">regex_sequence</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">conflict_resolving_strategy</span><span class="o">=</span><span class="s1">&#39;MAX&#39;</span><span class="p">,</span> <span class="n">return_layer</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                 <span class="n">layer_name</span><span class="o">=</span><span class="s1">&#39;regexes&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a new RegexTagger instance.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        regex_sequence: list-like or dict-like</span>
+<span class="sd">            sequence of regexes to annotate</span>
+<span class="sd">        conflict_resolving_strategy: &#39;ALL&#39;, &#39;MAX&#39;, &#39;MIN&#39;</span>
+<span class="sd">            Strategy to choose between overlapping events (default: &#39;MAX&#39;).</span>
+<span class="sd">        return_layer: bool</span>
+<span class="sd">            if True, KeywordTagger.tag(text) returns a layer. If False, KeywordTagger.tag(text) annotates the text object with the layer instead.</span>
+<span class="sd">        layer_name: str</span>
+<span class="sd">            if return_layer is False, KeywordTagger.tag(text) annotates to this layer of the text object. Default &#39;keywords&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">regex_sequence</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can&#39;t really do something without keywords&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regex_sequence</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">):</span>
+            <span class="c1"># I think we got a dataframe</span>
+            <span class="n">restricted_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s1">&#39;groups&#39;</span><span class="p">,</span> <span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="s1">&#39;regex&#39;</span><span class="p">])</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">regex_sequence</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">columns</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">restricted_words</span><span class="p">):</span>
+                <span class="n">banned</span> <span class="o">=</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">columns</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">restricted_words</span><span class="p">)))</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Illegal column names in dataframe: {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">banned</span><span class="p">))</span>
+
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">regex_sequence</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">regex_sequence</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s1">&#39;index&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">regex_sequence</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">regex_sequence</span> <span class="o">=</span> <span class="n">regex_sequence</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_name</span> <span class="o">=</span> <span class="n">layer_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">return_layer</span> <span class="o">=</span> <span class="n">return_layer</span>
+        <span class="k">if</span> <span class="n">conflict_resolving_strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ALL&#39;</span><span class="p">,</span> <span class="s1">&#39;MIN&#39;</span><span class="p">,</span> <span class="s1">&#39;MAX&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown conflict_resolving_strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span> <span class="o">%</span> <span class="n">conflict_resolving_strategy</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conflict_resolving_strategy</span> <span class="o">=</span> <span class="n">conflict_resolving_strategy</span></div>
+
+<div class="viewcode-block" id="RegexTagger.tag"><a class="viewcode-back" href="../event_tagger.html#event_tagger.RegexTagger.tag">[docs]</a>    <span class="k">def</span> <span class="nf">tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves list of regex_matches in text.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        text: Text</span>
+<span class="sd">            The estnltk text object to search for events.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of matches</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_match</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_conflicts</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_layer</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">matches</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">text</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">matches</span></div>
+
+    <span class="k">def</span> <span class="nf">_match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapping</span><span class="p">:</span>
+            <span class="n">seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">regex_sequence</span>
+
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">matchobj</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">overlapped</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+                <span class="n">groups</span> <span class="o">=</span> <span class="p">(</span><span class="n">matchobj</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">matchobj</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span>
+                    <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="n">matchobj</span><span class="o">.</span><span class="n">end</span><span class="p">(),</span>
+                    <span class="s1">&#39;regex&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">,</span>
+                    <span class="s1">&#39;groups&#39;</span><span class="p">:</span><span class="n">groups</span>
+                <span class="p">}</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">[</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                        <span class="n">result</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+                <span class="n">matches</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">result</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">matches</span></div>
+
+
+<div class="viewcode-block" id="EventTagger"><a class="viewcode-back" href="../event_tagger.html#event_tagger.EventTagger">[docs]</a><span class="k">class</span> <span class="nc">EventTagger</span><span class="p">(</span><span class="n">KeywordTagger</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A class that finds a list of events from Text object based on </span>
+<span class="sd">    user-provided vocabulary. The events are tagged by several metrics (start, </span>
+<span class="sd">    end, cstart, wstart, wstart_raw, wend_raw) and user-provided classificators.</span>
+<span class="sd">    </span>
+<span class="sd">    The word start ``wstart`` and char start ``cstart`` of an event are </span>
+<span class="sd">    calculated as if all the events consist of one character.  ``cstart`` and </span>
+<span class="sd">    ``wstart`` are calculated only if there is no overlapping events.</span>
+<span class="sd">    </span>
+<span class="sd">    ``wstart_raw``, ``wend_raw`` show at which word the event starts and ends</span>
+<span class="sd">    considering the real length of events.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="EventTagger.__init__"><a class="viewcode-back" href="../event_tagger.html#event_tagger.EventTagger.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_vocabulary</span><span class="p">,</span> 
+                 <span class="n">search_method</span><span class="o">=</span><span class="n">DEFAULT_METHOD</span><span class="p">,</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> 
+                 <span class="n">conflict_resolving_strategy</span><span class="o">=</span><span class="s1">&#39;MAX&#39;</span><span class="p">,</span> 
+                 <span class="n">return_layer</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">layer_name</span><span class="o">=</span><span class="s1">&#39;events&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a new EventTagger instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        event_vocabulary: list of dict, str, pandas.DataFrame</span>
+<span class="sd">            Vocabulary of events. There must be one key (column) called &#39;term&#39; </span>
+<span class="sd">            in ``event_vocabulary``. That refers to the strings searched from </span>
+<span class="sd">            the text. Other keys (&#39;type&#39; in the following examples) are optional. </span>
+<span class="sd">            No key may have name &#39;start&#39;, &#39;end&#39;, &#39;cstart&#39;, &#39;wstart&#39;, </span>
+<span class="sd">            &#39;wstart_raw&#39; or &#39;wend_raw&#39;.</span>
+
+<span class="sd">            If ``list of dict``, then every dict in the list is a vocabulary entry. </span>
+
+<span class="sd">            Example::</span>
+
+<span class="sd">                event_vocabulary = [{&#39;term&#39;: &#39;Harv&#39;,    &#39;type&#39;: &#39;sagedus&#39;}, </span>
+<span class="sd">                                    {&#39;term&#39;: &#39;peavalu&#39;, &#39;type&#39;: &#39;sümptom&#39;}]</span>
+<span class="sd">                                        </span>
+<span class="sd">            If ``str``, then event vocabulary is read from csv file named</span>
+<span class="sd">            ``event_vocabulary``.</span>
+
+<span class="sd">            Example::</span>
+
+<span class="sd">                term,type</span>
+<span class="sd">                Harv,sagedus</span>
+<span class="sd">                peavalu,sümptom</span>
+<span class="sd">                                </span>
+<span class="sd">            If ``pandas.DataFrame``, then the vocabulary of events is created </span>
+<span class="sd">            from the ``pandas.DataFrame``.</span>
+
+<span class="sd">            Example::</span>
+<span class="sd">            </span>
+<span class="sd">                event_vocabulary = DataFrame([[&#39;Harv&#39;,    &#39;sagedus&#39;], </span>
+<span class="sd">                                              [&#39;peavalu&#39;, &#39;sümptom&#39;]], </span>
+<span class="sd">                                      columns=[&#39;term&#39;,    &#39;type&#39;])</span>
+<span class="sd">                                          </span>
+<span class="sd">        search_method: &#39;naive&#39;, &#39;ahocorasic&#39;</span>
+<span class="sd">            (default: &#39;naive&#39; for python2 and &#39;ahocorasick&#39; for python3)</span>
+<span class="sd">            </span>
+<span class="sd">            Method to find events in text.</span>
+<span class="sd">        case_sensitive: bool (default: True)        </span>
+<span class="sd">            If ``True``, then the terms are searched from the text case sensitive.</span>
+
+<span class="sd">            If ``False``, then the terms are searched from the text case insensitive.</span>
+<span class="sd">        conflict_resolving_strategy: &#39;ALL&#39;, &#39;MAX&#39;, &#39;MIN&#39; (default: &#39;MAX&#39;)</span>
+<span class="sd">            Strategy to choose between overlaping events.</span>
+
+<span class="sd">            If &#39;ALL&#39; returns all events.</span>
+
+<span class="sd">            If &#39;MAX&#39; returns all the events that are not contained by any other event.</span>
+
+<span class="sd">            If &#39;MIN&#39; returns all the events that don&#39;t contain any other event.</span>
+<span class="sd">        return_layer: bool</span>
+<span class="sd">            If ``True``, EventTagger.tag(text) returns a layer. </span>
+<span class="sd">            If ``False``, EventTagger.tag(text) annotates the text object with the layer instead.</span>
+<span class="sd">        layer_name: str (default: &#39;events&#39;)</span>
+<span class="sd">            If ``return_layer`` is ``False``, EventTagger.tag(text) annotates </span>
+<span class="sd">            to this layer of the text object. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_name</span> <span class="o">=</span> <span class="n">layer_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">return_layer</span> <span class="o">=</span> <span class="n">return_layer</span>
+        <span class="k">if</span> <span class="n">search_method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;naive&#39;</span><span class="p">,</span> <span class="s1">&#39;ahocorasick&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown search_method &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span> <span class="o">%</span> <span class="n">search_method</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive</span> <span class="o">=</span> <span class="n">case_sensitive</span>
+        <span class="k">if</span> <span class="n">conflict_resolving_strategy</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ALL&#39;</span><span class="p">,</span> <span class="s1">&#39;MIN&#39;</span><span class="p">,</span> <span class="s1">&#39;MAX&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown onflict_resolving_strategy &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span> <span class="o">%</span> <span class="n">conflict_resolving_strategy</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">search_method</span> <span class="o">==</span> <span class="s1">&#39;ahocorasick&#39;</span> <span class="ow">and</span> <span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;search_method=&#39;ahocorasick&#39; is not supported by Python </span><span class="si">%s</span><span class="s2">. Try &#39;naive&#39; instead.&quot;</span> <span class="o">%</span> <span class="n">version_info</span><span class="o">.</span><span class="n">major</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_vocabulary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_event_vocabulary</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">search_method</span> <span class="o">=</span> <span class="n">search_method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conflict_resolving_strategy</span> <span class="o">=</span> <span class="n">conflict_resolving_strategy</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_read_event_vocabulary</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">event_vocabulary</span> <span class="o">=</span> <span class="n">event_vocabulary</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">event_vocabulary</span> <span class="o">=</span> <span class="n">event_vocabulary</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s1">&#39;records&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="nb">file</span><span class="p">:</span>
+                <span class="n">reader</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">DictReader</span><span class="p">(</span><span class="nb">file</span><span class="p">)</span>
+                <span class="n">event_vocabulary</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+                    <span class="n">event_vocabulary</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> not supported as event_vocabulary&quot;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_vocabulary</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">START</span> <span class="ow">in</span> <span class="n">event_vocabulary</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span>
+                    <span class="n">END</span> <span class="ow">in</span> <span class="n">event_vocabulary</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span>
+                    <span class="n">WSTART</span> <span class="ow">in</span> <span class="n">event_vocabulary</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span>
+                    <span class="n">CSTART</span> <span class="ow">in</span> <span class="n">event_vocabulary</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span>
+                    <span class="n">WSTART_RAW</span> <span class="ow">in</span> <span class="n">event_vocabulary</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span>
+                    <span class="n">WEND_RAW</span> <span class="ow">in</span> <span class="n">event_vocabulary</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;Illegal key in event vocabulary.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">TERM</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">event_vocabulary</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Missing key &#39;&quot;</span> <span class="o">+</span> <span class="n">TERM</span> <span class="o">+</span> <span class="s2">&quot;&#39; in event vocabulary.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">event_vocabulary</span>
+
+    <span class="k">def</span> <span class="nf">_find_events_naive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">_text</span> <span class="o">=</span> <span class="n">text</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive</span> <span class="k">else</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_vocabulary</span><span class="p">:</span>
+            <span class="n">term</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="n">TERM</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive</span> <span class="k">else</span> <span class="n">entry</span><span class="p">[</span><span class="n">TERM</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">_text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">term</span><span class="p">)</span>
+            <span class="k">while</span> <span class="n">start</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+                <span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">START</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="n">END</span><span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="n">TERM</span><span class="p">])})</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">_text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">events</span>
+
+    <span class="k">def</span> <span class="nf">_find_events_ahocorasick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span> <span class="o">=</span> <span class="n">ahocorasick</span><span class="o">.</span><span class="n">Automaton</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_vocabulary</span><span class="p">:</span>
+                <span class="n">term</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="n">TERM</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive</span> <span class="k">else</span> <span class="n">entry</span><span class="p">[</span><span class="n">TERM</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span><span class="o">.</span><span class="n">add_word</span><span class="p">(</span><span class="n">term</span><span class="p">,</span> <span class="n">entry</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span><span class="o">.</span><span class="n">make_automaton</span><span class="p">()</span>
+        <span class="n">_text</span> <span class="o">=</span> <span class="n">text</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">case_sensitive</span> <span class="k">else</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ahocorasick_automaton</span><span class="o">.</span><span class="n">iter</span><span class="p">(</span><span class="n">_text</span><span class="p">):</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+            <span class="n">events</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">START</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">TERM</span><span class="p">]),</span> <span class="n">END</span><span class="p">:</span> <span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">events</span>
+
+    <span class="k">def</span> <span class="nf">_event_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">bookmark</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">overlapping_events</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">last_end</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last_end</span> <span class="o">&gt;</span> <span class="n">event</span><span class="p">[</span><span class="n">START</span><span class="p">]:</span>
+                <span class="n">overlapping_events</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">last_end</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="n">END</span><span class="p">]</span>
+            <span class="n">event</span><span class="p">[</span><span class="n">WSTART_RAW</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">word_spans</span><span class="p">)</span>
+            <span class="n">event</span><span class="p">[</span><span class="n">WEND_RAW</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bookmark</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">word_spans</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">word_spans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">event</span><span class="p">[</span><span class="n">START</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">text</span><span class="o">.</span><span class="n">word_spans</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">event</span><span class="p">[</span><span class="n">WSTART_RAW</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span>
+                    <span class="n">bookmark</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">word_spans</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">event</span><span class="p">[</span><span class="n">END</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">text</span><span class="o">.</span><span class="n">word_spans</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="n">event</span><span class="p">[</span><span class="n">WEND_RAW</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="k">break</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">overlapping_events</span><span class="p">:</span>
+            <span class="n">w_shift</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">c_shift</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
+                <span class="n">event</span><span class="p">[</span><span class="n">WSTART</span><span class="p">]</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="n">WSTART_RAW</span><span class="p">]</span> <span class="o">-</span> <span class="n">w_shift</span>
+                <span class="n">w_shift</span> <span class="o">+=</span> <span class="n">event</span><span class="p">[</span><span class="n">WEND_RAW</span><span class="p">]</span> <span class="o">-</span> <span class="n">event</span><span class="p">[</span><span class="n">WSTART_RAW</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+
+                <span class="n">event</span><span class="p">[</span><span class="n">CSTART</span><span class="p">]</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="n">START</span><span class="p">]</span> <span class="o">-</span> <span class="n">c_shift</span>
+                <span class="n">c_shift</span> <span class="o">+=</span> <span class="n">event</span><span class="p">[</span><span class="n">END</span><span class="p">]</span> <span class="o">-</span> <span class="n">event</span><span class="p">[</span><span class="n">START</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">events</span>
+
+<div class="viewcode-block" id="EventTagger.tag"><a class="viewcode-back" href="../event_tagger.html#event_tagger.EventTagger.tag">[docs]</a>    <span class="k">def</span> <span class="nf">tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves list of events in text.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        text: Text</span>
+<span class="sd">            The text to search for events.</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of events sorted by start, end</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_method</span> <span class="o">==</span> <span class="s1">&#39;ahocorasick&#39;</span><span class="p">:</span>
+            <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_events_ahocorasick</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">search_method</span> <span class="o">==</span> <span class="s1">&#39;naive&#39;</span><span class="p">:</span>
+            <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_events_naive</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_conflicts</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_event_intervals</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_layer</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">events</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">text</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">events</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">episode-miner 1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, University of Tartu.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.2.
+    </div>
+  </body>
+</html>

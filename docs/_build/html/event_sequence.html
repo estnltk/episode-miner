@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Event and EventSequence &mdash; episode-miner 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="episode-miner 1.0 documentation" href="index.html" />
+    <link rel="next" title="Winepi" href="winepi.html" />
+    <link rel="prev" title="episode-miner – event tagging and Winepi implementation for Estnltk" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="winepi.html" title="Winepi"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="episode-miner – event tagging and Winepi implementation for Estnltk"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">episode-miner 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-event_sequence">
+<span id="event-and-eventsequence"></span><h1><code class="xref py py-mod docutils literal"><span class="pre">Event</span> <span class="pre">and</span> <span class="pre">EventSequence</span></code><a class="headerlink" href="#module-event_sequence" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="event_sequence.Event">
+<em class="property">class </em><code class="descclassname">event_sequence.</code><code class="descname">Event</code><span class="sig-paren">(</span><em>event_type</em>, <em>event_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_sequence.html#Event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_sequence.Event" title="Permalink to this definition">¶</a></dt>
+<dd><p>An event is a pair of event type and event time.</p>
+<dl class="method">
+<dt id="event_sequence.Event.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>event_type</em>, <em>event_time</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_sequence.html#Event.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_sequence.Event.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new Event.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>event_type: hashable</strong></p>
+<blockquote>
+<div><p>Type of event</p>
+</div></blockquote>
+<p><strong>event_time: int</strong></p>
+<blockquote class="last">
+<div><p>Time of event</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="event_sequence.Event.shift">
+<code class="descname">shift</code><span class="sig-paren">(</span><em>shift</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_sequence.html#Event.shift"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_sequence.Event.shift" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change time of event.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>shift: int</strong></p>
+<blockquote class="last">
+<div><p>Shifts the time of event by <em>shift</em>.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="event_sequence.EventSequence">
+<em class="property">class </em><code class="descclassname">event_sequence.</code><code class="descname">EventSequence</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_sequence.html#EventSequence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_sequence.EventSequence" title="Permalink to this definition">¶</a></dt>
+<dd><p>An event sequence is a triple of sequence of events, start and end.</p>
+<dl class="method">
+<dt id="event_sequence.EventSequence.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_sequence.html#EventSequence.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_sequence.EventSequence.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize a new EventSequence</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sequence_of_events: list of Event</strong></p>
+<blockquote>
+<div><p>Sequence of events</p>
+</div></blockquote>
+<p><strong>start: int</strong></p>
+<blockquote>
+<div><p>Start of sequence of events.</p>
+</div></blockquote>
+<p><strong>end: int</strong></p>
+<blockquote>
+<div><p>End of sequence of events. If start &gt; end, <strong>ValueError</strong> is raised.</p>
+</div></blockquote>
+<p><strong>event_text: EventText</strong></p>
+<blockquote>
+<div><p>If given, then the parameters <em>classsificator</em> and 
+<em>time_scale</em> must also be given.</p>
+</div></blockquote>
+<p><strong>classificator: str</strong></p>
+<blockquote>
+<div><p>Keyword of <em>event_text</em>&#8216;s &#8216;events&#8217; layer that points to event type.</p>
+</div></blockquote>
+<p><strong>time_scale: &#8216;start&#8217;, &#8216;end&#8217;, &#8216;cstart&#8217;, &#8216;wstart&#8217;</strong></p>
+<blockquote class="last">
+<div><p>Strategy to determine time of event.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="event_sequence.EventSequence.episodes_and_examples_to_file">
+<code class="descname">episodes_and_examples_to_file</code><span class="sig-paren">(</span><em>episodes</em>, <em>window_width</em>, <em>allow_intermediate_events</em>, <em>number_of_examples='ALL'</em>, <em>episodes_file='episodes.txt'</em>, <em>episode_examples_file='episode_examples.txt'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_sequence.html#EventSequence.episodes_and_examples_to_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_sequence.EventSequence.episodes_and_examples_to_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write list of episodes and episode examples to file.</p>
+<p>Creates files &#8216;episodes.txt&#8217; and &#8216;episode_examples.txt&#8217;.</p>
+<p>Each line of &#8216;episodes.txt&#8217; contains one episode from <cite>episodes</cite> 
+serialized by json as a dict with keys &#8216;sequence_of_events&#8217;, 
+&#8216;abs_support&#8217;, &#8216;rel_support&#8217;, &#8216;allow_intermediate_events&#8217;.</p>
+<p>Each line of &#8216;episode_examples.txt&#8217; contains list of examples for the 
+corresponding episode serialised by json.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>episodes: list of Episode</strong></p>
+<blockquote>
+<div><p>The episodes written to the file</p>
+</div></blockquote>
+<p><strong>window_width: int</strong></p>
+<blockquote>
+<div><p>Width of Winepi window.</p>
+</div></blockquote>
+<p><strong>allow_intermediate_events: bool</strong></p>
+<blockquote>
+<div><p>If True, all serial episodes are found.</p>
+<p>If False, only serial episodes with no intermediate events are found.</p>
+</div></blockquote>
+<p><strong>number_of_examples: int, &#8216;ALL&#8217; (default: &#8216;ALL&#8217;)</strong></p>
+<blockquote>
+<div><p>Maximum number of examples written to the file.</p>
+<p>If number_of_examples is less than 1, &#8216;episode_examples.txt&#8217; is not 
+created.</p>
+<p>If number_of_examples==&#8217;ALL&#8217;, all examples of episodes are written 
+to the file.</p>
+</div></blockquote>
+<p><strong>episodes_file: str (default: &#8216;episodes.txt&#8217;)</strong></p>
+<blockquote>
+<div><p>Name for the file of episodes.</p>
+</div></blockquote>
+<p><strong>episode_examples_file: str (default: &#8216;episode_examples.txt&#8217;)</strong></p>
+<blockquote class="last">
+<div><p>Name for the file of episode examples.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="event_sequence.EventSequence.find_episode_examples">
+<code class="descname">find_episode_examples</code><span class="sig-paren">(</span><em>episode</em>, <em>window_width</em>, <em>allow_intermediate_events=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/event_sequence.html#EventSequence.find_episode_examples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#event_sequence.EventSequence.find_episode_examples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find episode examples</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>episode: Episode</strong></p>
+<blockquote>
+<div><p>Winepi episode.</p>
+</div></blockquote>
+<p><strong>window_width: int</strong></p>
+<blockquote>
+<div><p>Width of Winepi window.</p>
+</div></blockquote>
+<p><strong>allow_intermediate_events: bool (default: episode.allow_intermediate_events)</strong></p>
+<blockquote>
+<div><p>If True, all serial episodes are found.</p>
+<p>If False, only serial episodes with no intermediate events are found.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">generator</p>
+<blockquote class="last">
+<div><p>Generator for examples.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">episode-miner &#8211; event tagging and Winepi implementation for Estnltk</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="winepi.html"
+                        title="next chapter"><code class="docutils literal"><span class="pre">Winepi</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/event_sequence.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="winepi.html" title="Winepi"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="episode-miner – event tagging and Winepi implementation for Estnltk"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">episode-miner 1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2016, University of Tartu.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.2.
+    </div>
+  </body>
+</html>
