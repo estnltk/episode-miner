@@ -1,4 +1,3 @@
-import os
 import unittest
 from episode_miner import Event, EventSequence, EventText, EventTagger, Episode
 from os.path import exists as file_exists
@@ -201,7 +200,7 @@ class EventSequenceTest(unittest.TestCase):
                                                      number_of_examples=2)
         with open('episode_examples.txt') as f:
             result = f.read()
-        expected='''[["a", 1], ["a", 2]][["a", 2], ["a", 4]]\n[["a", 1], ["b", 2]][["a", 1], ["b", 3]]\n'''
+        expected='''[[["a", 1], ["a", 2]], [["a", 2], ["a", 4]]]\n[[["a", 1], ["b", 2]], [["a", 1], ["b", 3]]]\n'''
         # TODO: test 'episodes.txt'
         self.assertEqual(expected, result)
         self.assertTrue(file_exists('episodes.txt'))

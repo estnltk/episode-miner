@@ -10,7 +10,7 @@ class Event(object):
     """An event is a pair of event type and event time."""
     
     def __init__(self, event_type, event_time):
-        """Initialize a new Event
+        """Initialize a new Event.
         
         Parameters
         ----------
@@ -42,7 +42,7 @@ class Event(object):
         Parameters
         ----------
         shift: int
-            The amount of time to to add to the time of event.
+            Shifts the time of event by *shift*.
         """
         self.event_time += shift
         return self
@@ -61,14 +61,15 @@ class EventSequence(object):
         start: int
             Start of sequence of events.
         end: int
-            End of sequence of events. If start > end, ValueError is raised.
+            End of sequence of events. If start > end, **ValueError** is raised.
         event_text: EventText
-            If given, then the parameters ``classsificator`` and 
-            ``time_scale`` must also be given.
+            If given, then the parameters *classsificator* and 
+            *time_scale* must also be given.
         classificator: str
-            Keyword of event_text 'events' layer that points to event type.
-        time_scale: 'start', 'end', 'cstart', 'wstart', 
-            Strategy to determine time of event.
+            Keyword of *event_text*'s 'events' layer that points to the event 
+            type under interest.
+        time_scale: 'start', 'end', 'cstart', 'wstart' 
+            Strategy to determine the time of event.
         """
         self.sequence_of_events = kwargs.get('sequence_of_events')
         self.start = kwargs.get('start')
@@ -191,7 +192,7 @@ class EventSequence(object):
                         break
 
     def find_episode_examples(self, episode, window_width, allow_intermediate_events=None):
-        """Find episode examples
+        """Find episode examples.
         
         Parameters
         ----------
@@ -199,9 +200,9 @@ class EventSequence(object):
             Winepi episode.
         window_width: int
             Width of Winepi window.
-        allow_intermediate_events: bool
-            Default: episode.allow_intermediate_events
+        allow_intermediate_events: bool (default: episode.allow_intermediate_events)
             If True, all serial episodes are found.
+
             If False, only serial episodes with no intermediate events are found.
 
         Returns
@@ -226,36 +227,39 @@ class EventSequence(object):
                                       number_of_examples='ALL',
                                       episodes_file='episodes.txt',
                                       episode_examples_file='episode_examples.txt'):
-        """Write list of episodes and episode examples to file.
+        """Write the list of episodes and episode examples to file.
         
         Creates files 'episodes.txt' and 'episode_examples.txt'.
+        
         Each line of 'episodes.txt' contains one episode from `episodes` 
-        serialized as a dict with keys 'sequence_of_events', 'abs_support', 
-        'rel_support', 'allow_intermediate_events'. 
-        Each line of 'episode_examples.txt' contains examples for the 
-        corresponding episode.
+        serialized by json as a dict with keys 'sequence_of_events', 
+        'abs_support', 'rel_support', 'allow_intermediate_events'. 
+        
+        Each line of 'episode_examples.txt' contains list of examples for the 
+        corresponding episode serialised by json.
         
         Parameters
         ----------
         episodes: list of Episode
             The episodes written to the file
         window_width: int
-            Width of Winepi window.
+            Width of the Winepi window.
         allow_intermediate_events: bool
             If True, all serial episodes are found.
+
             If False, only serial episodes with no intermediate events are found.            
-        number_of_examples: int, 'ALL'
-            (default: 'ALL')
-            Maximum number of examples written to the file. If number_of_examples
-            is less than 1, 'episode_examples.txt' is not created. If 
-            number_of_examples=='ALL', all examples of episodes are written to 
-            the file.
-        episodes_file: str
-            (default: 'episodes.txt')
-            Name for file of episodes.
-        episode_examples_file: str
-            (default: 'episode_examples.txt')
-            Name for file of episode examples.
+        number_of_examples: int, 'ALL' (default: 'ALL')
+            Maximum number of examples written to the file. 
+
+            If number_of_examples is less than 1, 'episode_examples.txt' is not 
+            created. 
+            
+            If number_of_examples=='ALL', all examples of episodes are written 
+            to the file.
+        episodes_file: str (default: 'episodes.txt')
+            Name for the file of episodes.
+        episode_examples_file: str (default: 'episode_examples.txt')
+            Name for the file of episode examples.
         """
         with open(episodes_file, mode='w') as f:
             for episode in episodes:
@@ -279,15 +283,16 @@ class EventSequence(object):
                     return [obj.event_type, obj.event_time]
                 # Let the base class default method raise the TypeError
                 return json.JSONEncoder.default(self, obj)
-
         
         with open(episode_examples_file, mode='w') as f:
             for episode in episodes:
                 k = 1
-                for example in self.find_episode_examples(episode, window_width, allow_intermediate_events):
-                    json.dump(example, fp=f, ensure_ascii=False, cls=EventEncoder)
+                examples = []
+                for example in self.find_episode_examples(episode, window_width, 
+                                                          allow_intermediate_events):
+                    examples.append(example)
                     k += 1
                     if number_of_examples != 'ALL' and k > number_of_examples:
                         break
+                json.dump(examples, fp=f, ensure_ascii=False, cls=EventEncoder)
                 f.write('\n')
-        

@@ -1,0 +1,6 @@
+{"abs_support": 85, "allow_intermediate_events": true, "rel_support": 0.9139784946236559, "sequence_of_events": ["üks"]}
+{"abs_support": 85, "allow_intermediate_events": true, "rel_support": 0.9139784946236559, "sequence_of_events": ["kaks"]}
+{"abs_support": 78, "allow_intermediate_events": true, "rel_support": 0.8387096774193549, "sequence_of_events": ["üks", "kaks"]}
+{"abs_support": 35, "allow_intermediate_events": true, "rel_support": 0.3763440860215054, "sequence_of_events": ["kaks", "üks"]}
+{"abs_support": 38, "allow_intermediate_events": true, "rel_support": 0.40860215053763443, "sequence_of_events": ["kaks", "kaks"]}
+{"abs_support": 29, "allow_intermediate_events": true, "rel_support": 0.3118279569892473, "sequence_of_events": ["kaks", "üks", "kaks"]}
