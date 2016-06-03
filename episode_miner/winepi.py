@@ -1,8 +1,19 @@
+"""A partial implementation of Winepi algorithm described by Mannila, Toivonen 
+and Verkamo in *Discovery of Frequent Episodes in Event Sequences*, 1997.
+"""
+
 from episode_miner.event_sequence import EventSequence
 
 class Episode(tuple):
+    """An episode is a sequence of event types.
+    
+    The Winepi algorithm determines the relative and absolute support of episode
+    in sequence of events.
+    """
 
     def __init__(self, sequence_of_event_types):
+        """Initialize a new Episode instance.
+        """
         self._initialized = [None] * len(sequence_of_event_types)
         self._inwindow = None
         self.abs_support = 0
@@ -21,7 +32,11 @@ class Episode(tuple):
         self.rel_support = 0
 
 
-def episode_frequences(event_sequence, collection_of_serial_episodes, window_width, only_full_windows, allow_intermediate_events):
+def episode_frequences(event_sequence, collection_of_serial_episodes, 
+                       window_width, only_full_windows, 
+                       allow_intermediate_events):
+    """The central algorithm of Winepi.
+    """
     if len(event_sequence.sequence_of_events) == 0: 
         return collection_of_serial_episodes
     waits = {}
@@ -158,7 +173,8 @@ def find_sequential_episodes(event_sequences, window_width, min_frequency,
                                     only_full_windows=False, 
                                     allow_intermediate_events=True, 
                                     **kwargs):
-    """Find frequent serial episodes in event sequences
+    """Find frequent serial episodes in event sequences. The central 
+    functionality of Winepi.
     
     Parameters
     ----------

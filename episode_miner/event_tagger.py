@@ -144,9 +144,12 @@ class KeywordTagger(object):
 
 
 class RegexTagger(KeywordTagger):
+    """ 
+    """
     def __init__(self, regex_sequence=None, conflict_resolving_strategy='MAX', return_layer=False,
                  layer_name='regexes'):
         """Initialize a new RegexTagger instance.
+        
         Parameters
         ----------
         regex_sequence: list-like or dict-like
@@ -235,10 +238,11 @@ class EventTagger(KeywordTagger):
     end, cstart, wstart, wstart_raw, wend_raw) and user-provided classificators.
     
     The word start ``wstart`` and char start ``cstart`` of an event are 
-    calculated as if all the events consist of one char.  ``cstart`` and 
+    calculated as if all the events consist of one character.  ``cstart`` and 
     ``wstart`` are calculated only if there is no overlapping events.
     
-    ``wstart_raw``, ``wend_raw`` show at which word the event starts and ends.
+    ``wstart_raw``, ``wend_raw`` show at which word the event starts and ends
+    considering the real length of events.
     """
     
     def __init__(self, event_vocabulary, 
@@ -252,43 +256,55 @@ class EventTagger(KeywordTagger):
         event_vocabulary: list of dict, str, pandas.DataFrame
             Vocabulary of events. There must be one key (column) called 'term' 
             in ``event_vocabulary``. That refers to the strings searched from 
-            the text. Other keys (**type** in following examples) are optional. 
+            the text. Other keys ('type' in the following examples) are optional. 
             No key may have name 'start', 'end', 'cstart', 'wstart', 
             'wstart_raw' or 'wend_raw'.
+
             If ``list of dict``, then every dict in the list is a vocabulary entry. 
-                Example:
+
+            Example::
+
                 event_vocabulary = [{'term': 'Harv',    'type': 'sagedus'}, 
                                     {'term': 'peavalu', 'type': 'sümptom'}]
-            If ``str``, then event vocabulary is read from csv file 
-                ``event_vocabulary``.
-                Example:
-                    term,type
-                    Harv,sagedus
-                    peavalu,sümptom
+                                        
+            If ``str``, then event vocabulary is read from csv file named
+            ``event_vocabulary``.
+
+            Example::
+
+                term,type
+                Harv,sagedus
+                peavalu,sümptom
+                                
             If ``pandas.DataFrame``, then the vocabulary of events is created 
             from the ``pandas.DataFrame``.
-                Example:
+
+            Example::
+            
                 event_vocabulary = DataFrame([['Harv',    'sagedus'], 
                                               ['peavalu', 'sümptom']], 
                                       columns=['term',    'type'])
+                                          
         search_method: 'naive', 'ahocorasic'
             (default: 'naive' for python2 and 'ahocorasick' for python3)
+            
             Method to find events in text.
-        case_sensitive: bool
-            (default: ``True``)
+        case_sensitive: bool (default: True)        
             If ``True``, then the terms are searched from the text case sensitive.
+
             If ``False``, then the terms are searched from the text case insensitive.
-        conflict_resolving_strategy: 'ALL', 'MAX', 'MIN'
-            (default: 'MAX')
+        conflict_resolving_strategy: 'ALL', 'MAX', 'MIN' (default: 'MAX')
             Strategy to choose between overlaping events.
+
             If 'ALL' returns all events.
+
             If 'MAX' returns all the events that are not contained by any other event.
+
             If 'MIN' returns all the events that don't contain any other event.
         return_layer: bool
-            If True, EventTagger.tag(text) returns a layer. 
-            If False, EventTagger.tag(text) annotates the text object with the layer instead.
-        layer_name: str
-            (Default: 'events')
+            If ``True``, EventTagger.tag(text) returns a layer. 
+            If ``False``, EventTagger.tag(text) annotates the text object with the layer instead.
+        layer_name: str (default: 'events')
             If ``return_layer`` is ``False``, EventTagger.tag(text) annotates 
             to this layer of the text object. 
         """
