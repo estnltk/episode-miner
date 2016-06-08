@@ -1,6 +1,6 @@
-{"abs_support": 85, "rel_support": 0.9139784946236559, "sequence_of_events": ["kaks"], "allow_intermediate_events": true}
-{"abs_support": 85, "rel_support": 0.9139784946236559, "sequence_of_events": ["üks"], "allow_intermediate_events": true}
-{"abs_support": 38, "rel_support": 0.40860215053763443, "sequence_of_events": ["kaks", "kaks"], "allow_intermediate_events": true}
-{"abs_support": 35, "rel_support": 0.3763440860215054, "sequence_of_events": ["kaks", "üks"], "allow_intermediate_events": true}
-{"abs_support": 78, "rel_support": 0.8387096774193549, "sequence_of_events": ["üks", "kaks"], "allow_intermediate_events": true}
-{"abs_support": 29, "rel_support": 0.3118279569892473, "sequence_of_events": ["kaks", "üks", "kaks"], "allow_intermediate_events": true}
+{"sequence_of_events": ["kaks"], "rel_support": 0.9254658385093167, "abs_support": 149, "allow_intermediate_events": true}
+{"sequence_of_events": ["üks"], "rel_support": 0.8695652173913043, "abs_support": 140, "allow_intermediate_events": true}
+{"sequence_of_events": ["kaks", "kaks"], "rel_support": 0.4161490683229814, "abs_support": 67, "allow_intermediate_events": true}
+{"sequence_of_events": ["kaks", "üks"], "rel_support": 0.43478260869565216, "abs_support": 70, "allow_intermediate_events": true}
+{"sequence_of_events": ["üks", "kaks"], "rel_support": 0.8012422360248447, "abs_support": 129, "allow_intermediate_events": true}
+{"sequence_of_events": ["kaks", "üks", "kaks"], "rel_support": 0.36024844720496896, "abs_support": 58, "allow_intermediate_events": true}

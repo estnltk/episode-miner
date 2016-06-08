@@ -11,8 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   event_sequence
-   winepi
+   event_sequences
    event_tagger
    event_text
 
