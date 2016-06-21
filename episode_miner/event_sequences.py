@@ -1,3 +1,4 @@
+from io import StringIO
 import json
 from cached_property import cached_property
 
@@ -57,21 +58,26 @@ class Episodes(list):
             episodes = [episodes]
         list.__init__(self, episodes)
 
-    def to_json(self, file='episodes.txt'):
-        """Write episodes to file.
+    def to_json(self, file=None):
+        """Write episodes to file or return a string of episodes.
         
-        Creates file *file*.
+        If file is given, creates file *file*.
                 
-        Each line of file contains episode serialized by json. The lines of the 
-        files created by to_json() and examples_to_json() correspond to each 
-        other. 
+        Each line of output contains episode serialized by json. The lines of 
+        the output created by to_json() and examples_to_json() correspond to 
+        each other. 
         
         Parameters
         ----------
-        file: str (default: 'episodes.txt')
-            Name for the file of episodes.
+        file: str (default: None)
+            Name of the file of episodes.
+                        
+        Returns
+        -------
+        str
+            If file is not given, returns string of episodes serialized by json.
         """
-        with open(file, mode='w') as f:
+        def write_episodes(f):
             for episode in self:
                 json.dump({'sequence_of_events': episode, 
                            'abs_support': episode.abs_support, 
@@ -80,25 +86,49 @@ class Episodes(list):
                           fp=f,
                           ensure_ascii=False)
                 f.write('\n')
+        if file == None:
+            f = StringIO()
+            write_episodes(f)
+            f.seek(0)
+            return f.read()
+        else:
+            with open(file, mode='w') as f:
+                write_episodes(f)
 
-    def examples_to_json(self, file='examples.txt'):        
-        """Write episode exampls to file.
+
+    def examples_to_json(self, file=None):        
+        """Write episode examples to file or return a string of episode examples.
         
-        Creates file *file*.
+        If file is given, creates file *file*.
                 
-        Each line of file contains episode examples serialized by json. The 
-        lines of the files created by to_json() and examples_to_json() 
+        Each line of output contains episode examples serialized by json. The 
+        lines of the output created by to_json() and examples_to_json() 
         correspond to each other. 
         
         Parameters
         ----------
-        file: str (default: 'examples.txt')
+        file: str (default: None)
             Name for the file of episode examples.
+
+        Returns
+        -------
+        str
+            If file is not given, returns string of episode examples serialized 
+            by json.
         """
-        with open(file, mode='w') as f:
+        def write_examples(f):
             for episode in self:
                 f.write(episode.examples.to_json())
                 f.write('\n')
+        
+        if file == None:
+            f = StringIO()
+            write_examples(f)
+            f.seek(0)
+            return f.read()
+        else:
+            with open(file, mode='w') as f:
+                write_examples(f)
     
     def abs_support(self):
         """Creates the list of absolute supports of episodes.

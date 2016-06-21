@@ -386,7 +386,7 @@ class EventSequenceTest(unittest.TestCase):
         result = event_sequences.find_serial_episodes(3, 0.51, False, False)
         self.assertListEqual(result, [])
  
-class TestEpisodes(unittest.TestCase):
+class EpisodesTest(unittest.TestCase):
     
     def test_support(self):
         sequence_of_events_1 = [
@@ -418,15 +418,20 @@ class TestEpisodes(unittest.TestCase):
         episode_2.examples = examples_2
         episodes = Episodes((episode_1, episode_2))
         
-        episodes.examples_to_json('examples.txt')
         episodes.to_json('episodes.txt')
+        self.assertTrue(file_exists('episodes.txt'))
+        # TODO: test 'episodes.txt' contents
+        file_remove('episodes.txt')
+
         
+        episodes.examples_to_json('examples.txt')        
+        self.assertTrue(file_exists('examples.txt'))
+
         with open('examples.txt') as f:
             result = f.read()
-        expected='''[[["a", 1], ["b", 2]], [["a", 2], ["b", 3]]]\n[[["b", 2]], [["b", 3]]]\n'''
-        # TODO: test 'episodes.txt'
+        expected='''[[["a", 1], ["b", 2]], [["a", 2], ["b", 3]]]\n[[["b", 2]], [["b", 3]]]\n'''        
         self.assertEqual(expected, result)
-        self.assertTrue(file_exists('episodes.txt'))
-        self.assertTrue(file_exists('examples.txt'))
-        file_remove('episodes.txt')
         file_remove('examples.txt')
+        
+        result = episodes.examples_to_json()
+        self.assertEqual(expected, result)
