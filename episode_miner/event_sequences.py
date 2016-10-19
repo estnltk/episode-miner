@@ -399,7 +399,7 @@ class EventSequence(object):
         waits = defaultdict(list)
         for episode in episodes:
             episode.reset_initialized()
-            waits.setdefault(episode[0], []).append((episode, 0))
+            waits[episode[0]].append((episode, 0))
         waits_init = {}
         for key in waits:
             waits_init[key] = waits[key].copy()          
