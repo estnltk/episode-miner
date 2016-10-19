@@ -428,8 +428,8 @@ class EventSequence(object):
                                     if only_full_windows and start < 0:
                                         episode._inwindow = 0
                             else:
-                                appends.append((episode, 1))                    
-                        elif j < len(episode) - 1: 
+                                appends.append((episode, 1))
+                        elif j < len(episode) - 1:
                             episode._initialized[j] = None
                             if episode._initialized[j-1] != None and episode._initialized[j-1].event_time > start: # seda saab täpsustada
                                 episode._initialized[j] = episode._initialized[j-1]
@@ -447,7 +447,8 @@ class EventSequence(object):
                 if event_in_dict:
                     if allow_intermediate_events:
                         for episode, j in removes:
-                            waits[episode[j]].remove((episode, j))
+                            if (episode, j) in waits[episode[j]]:
+                                waits[episode[j]].remove((episode, j))
                     else:
                         waits = {}
                         for key in waits_init:

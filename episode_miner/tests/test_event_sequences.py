@@ -331,6 +331,7 @@ class EventSequenceTest(unittest.TestCase):
                       Event('a', 1),
                       Event('b', 3),
                       Event('c', 3),
+                      Event('d', 5),
                       Event('d', 5)
                       ]
         event_sequences = EventSequences(sequence_of_events=sequence_of_events, start=0, end=6)
