@@ -1,6 +1,7 @@
 from io import StringIO
 import json
 from cached_property import cached_property
+from collections import defaultdict
 
 from estnltk.names import TEXT, START, END
 from estnltk import PrettyPrinter
@@ -395,7 +396,7 @@ class EventSequence(object):
         """
         if len(self.sequence_of_events) == 0: 
             return episodes
-        waits = {}
+        waits = defaultdict(list)
         for episode in episodes:
             episode.reset_initialized()
             waits.setdefault(episode[0], []).append((episode, 0))
@@ -405,9 +406,9 @@ class EventSequence(object):
     
         beginsat = {} 
                 
-        event_dict = {}
+        event_dict = defaultdict(list)
         for event in self.sequence_of_events:
-            event_dict.setdefault(event.event_time, []).append(event)
+            event_dict[event.event_time].append(event)
                 
         for start in range(self.start-window_width+1, self.end+1):
             beginsat[start+window_width-1] = []
@@ -415,9 +416,9 @@ class EventSequence(object):
                 removes = []
                 appends = []
                 event_in_dict = False
-                for event in event_dict.setdefault(start+window_width-1, []):#get hoopis?
+                for event in event_dict.get(start+window_width-1, []):
                     event_in_dict = True
-                    waits.setdefault(event.event_type, []).sort(key = lambda pair: pair[1], reverse = True)
+                    waits[event.event_type].sort(key = lambda pair: pair[1], reverse = True)
                     for episode, j in waits[event.event_type]: 
                         if j == 0:
                             episode._initialized[0] = event
@@ -450,11 +451,11 @@ class EventSequence(object):
                             if (episode, j) in waits[episode[j]]:
                                 waits[episode[j]].remove((episode, j))
                     else:
-                        waits = {}
-                        for key in waits_init:
-                            waits[key] = waits_init[key].copy()          
+                        waits = defaultdict(list)
+                        for key, value in waits_init.items():
+                            waits[key] = value.copy()          
                     for episode, j in appends:
-                        waits.setdefault(episode[j], []).append((episode, j))
+                        waits[episode[j]].append((episode, j))
             
             if start >= 0:
                 for episode in beginsat[start]:
