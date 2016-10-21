@@ -221,9 +221,11 @@ class RegexTagger(KeywordTagger):
                     'regex': r,
                     'groups':groups
                 }
-                for k, v in self.map[r].items():
-                    if k not in result.keys():
-                        result[k] = v
+
+                if self.mapping:
+                    for k, v in self.map[r].items():
+                        if k not in result.keys():
+                            result[k] = v
 
                 matches.append(
                     result
