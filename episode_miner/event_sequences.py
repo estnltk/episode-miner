@@ -6,7 +6,7 @@ from collections import defaultdict
 from estnltk.names import TEXT, START, END
 from estnltk import PrettyPrinter
 from estnltk.prettyprinter import HEADER, MIDDLE, FOOTER
-from episode_miner import TERM, WSTART, CSTART
+from estnltk.taggers.event_tagger import TERM, WSTART, CSTART
 import warnings
 
 class Episode(tuple):
