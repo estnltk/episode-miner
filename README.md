@@ -19,7 +19,8 @@ Find frequent episodes from text.
 
 
 ```python
-from episode_miner import EventTagger, EventText, EventSequences, Episode, Episodes
+from estnltk.taggers import EventTagger
+from episode_miner import EventText, EventSequences, Episode, Episodes
 
 event_vocabulary = [{'term': 'üks'}, 
                     {'term': 'kaks'}]    
