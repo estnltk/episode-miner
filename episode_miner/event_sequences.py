@@ -6,7 +6,8 @@ from collections import defaultdict
 from estnltk.names import TEXT, START, END
 from estnltk import PrettyPrinter
 from estnltk.prettyprinter import HEADER, MIDDLE, FOOTER
-from estnltk.taggers.event_tagger import TERM, WSTART, CSTART
+from estnltk.taggers.event_tagger import TERM, WSTART, CSTART, WSTART_RAW,\
+    WEND_RAW
 import warnings
 
 class Episode(tuple):
@@ -223,7 +224,7 @@ class EventSequence(object):
         classificator: str
             Keyword of *event_text*'s 'events' layer that points to the event 
             type under the interest.
-        time_scale: 'start', 'end', 'cstart', 'wstart' 
+        time_scale: 'start', 'end', 'cstart', 'wstart', 'wstart_raw', 'wend_raw'
             Strategy to determine the time of event.
         """
         self.sequence_of_events = kwargs.get('sequence_of_events')
@@ -234,7 +235,7 @@ class EventSequence(object):
         time_scale = kwargs.get('time_scale')
         classificator = kwargs.get('classificator')
         if self.event_text != None and classificator != None and time_scale != None:
-            self._extract_event_sequence_from_event_text(self.event_text, time_scale, classificator)
+            self.sequence_of_events = self._extract_event_sequence_from_event_text(self.event_text, time_scale, classificator)
 
         if self.start != None and self.end != None:
             self.sequence_of_events = [event for event in self.sequence_of_events 
@@ -265,10 +266,12 @@ class EventSequence(object):
         if self.start == None:
             self.start = 0
         if self.end == None: 
-            if time_scale in [START, END]:
+            if time_scale in (START, END):
                 self.end = len(event_text.text)
             elif time_scale == CSTART:
                 if len(event_text.events) > 0:
+                    if CSTART not in event_text.events[-1]:
+                        raise ValueError("event_text does not have 'cstart' attribute")
                     self.end = event_text.events[-1][CSTART] + len(event_text.text) - event_text.events[-1][END] + 1
                 else:
                     self.end = len(event_text.text)
@@ -278,22 +281,27 @@ class EventSequence(object):
                     for i in range(len(event_text.words)-1, -1, -1):
                         if end_of_last_event >= event_text.words[i][END]:
                             break
+                    if WSTART not in event_text.events[-1]:
+                        raise ValueError("event_text does not have 'wstart' attribute")
                     self.end = len(event_text.words) - i + event_text.events[-1][WSTART]
                 else:
                     self.end = len(event_text.words)
-            else: 
-                raise ValueError("time_scale must be either %s, %s, %s or %s" %START %END %CSTART %WSTART)
+            elif time_scale in (WSTART_RAW, WEND_RAW):
+                self.end = len(event_text.words)
+            else:
+                raise ValueError("time_scale must be either {}, {}, {}, {}, {} or {}".format(START, END, CSTART, WSTART, WSTART_RAW, WEND_RAW))
         if self.start > self.end:
             raise ValueError("start > end")
 
-        self.sequence_of_events = []
+        sequence_of_events = []
         for textevent in event_text.events:
             if self.start <= textevent[time_scale] < self.end:
                 event = Event(textevent[classificator], textevent[time_scale])
                 event.text = event_text
                 event.start = textevent[START]
                 event.end = textevent[END]
-                self.sequence_of_events.append(event)
+                sequence_of_events.append(event)
+        return sequence_of_events
 
     def _find_episode_examples_intermediate_events_allowed(self, episode, start, window_width, depth):
         if len(episode) == 0: return        

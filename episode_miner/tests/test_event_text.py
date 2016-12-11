@@ -1,6 +1,7 @@
 import unittest
 
-from episode_miner import EventText, EventTagger
+from episode_miner import EventText
+from estnltk.taggers import EventTagger
 
 class EventTextTest(unittest.TestCase):
     

@@ -2,8 +2,9 @@ import unittest
 from os.path import exists as file_exists
 from os import remove as file_remove
 
+from estnltk.taggers import EventTagger
 from episode_miner import Event, EventSequence, EventSequences, EventText,\
-                          EventTagger, Episode, Episodes
+                            Episode, Episodes
 
 class EpisodeTest(unittest.TestCase):
         
